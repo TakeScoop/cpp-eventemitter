@@ -1,0 +1,33 @@
+{
+    "name": "cpp-eventemitter",
+    "version": "1.0.0",
+    "description": "A Native Nan version of EventEmitter that allows C++ (and single-threaded C) to emit to javascript listeners as events happen.",
+    "main": "include_dirs.js",
+    "scripts": {
+        "test": "cd test; make clean; make test",
+        "jstests": "cd test; node-gyp configure && node-gyp rebuild && mocha ./js/*-test.js"
+    },
+    "keywords": [
+        "nan",
+        "native",
+        "c++",
+        "cpp",
+        "cplusplus",
+        "eventemitter",
+        "event",
+        "emitter"
+    ],
+    "author": "Jamie Beverly",
+    "license": "ISC",
+    "devDependencies": {
+        "catch": "^1.0.48",
+        "chai": "^4.0.2",
+        "mocha": "^3.4.2",
+        "node-gyp": "^3.6.2",
+        "path": "^0.12.7"
+    },
+    "dependencies": {
+        "bindings": "^1.2.1",
+        "nan": "^2.6.2"
+    }
+}
