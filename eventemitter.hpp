@@ -407,11 +407,11 @@ class AsyncEventEmittingReentrantCWorker : public AsyncQueuedProgressWorker<Prog
         ExecuteWithEmitter(&sender, this->reentrant_emit);
     }
 
-    static void reentrant_emit(void* sender, const char* ev, const char* value) {
+    static void reentrant_emit(const void* sender, const char* ev, const char* value) {
         if (sender) {
             auto reports = new ProgressReport[1];
             reports[0] = {ev, value};
-            auto emitter = static_cast<ExecutionProgressSender*>(sender);
+            auto emitter = static_cast<const ExecutionProgressSender*>(sender);
             emitter->Send(reports, 1);
         }
     }
