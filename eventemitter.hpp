@@ -399,7 +399,7 @@ class AsyncEventEmittingReentrantCWorker : public AsyncQueuedProgressWorker<Prog
     /// The work you need to happen in a worker thread
     ///
     /// @param[in] sender - An object you must pass as the first argument of fn
-    /// @param[in] fn - Function suitable for passing to single-threaded C code (uses a thread_local static)
+    /// @param[in] fn - Function suitable for passing to multi-threaded C code
     virtual void ExecuteWithEmitter(const ExecutionProgressSender* sender, eventemitter_fn_r fn) = 0;
 
  private:

@@ -137,3 +137,15 @@ TEST_CASE("Test that the reader blocks correctly when ringbuffer is empty") {
     REQUIRE(true == read_done.load());
     reader.join();
 }
+
+TEST_CASE("Test that the ringbuffer cycles") {
+    typedef size_t TestType;
+#define enqueue(VALUE) do { auto _t = new TestType[1]; _t[0] = VALUE; buf.enqueue(_t); } while(0)
+#define dequeue(VALUE) do { auto _t = buf.dequeue(); REQUIRE(_t[0] == VALUE); delete[] _t; } while(0)
+    RingBuffer<const TestType*, 4> buf;
+
+    for(int i = 0; i < 50; ++i) {
+        enqueue(i);
+        dequeue(i);
+    }
+} 

@@ -58,7 +58,7 @@ class RingBuffer {
     /// @returns true if there was something to dequeue, false otherwise
     bool dequeue_nonblocking(T& val) {
         std::unique_lock<std::mutex> guard{lock_};
-        if (!available()) {
+        if (!unlocked_available()) {
             return false;
         }
         val = unlocked_dequeue();
@@ -70,21 +70,26 @@ class RingBuffer {
     /// @returns the dequeued element
     T&& dequeue() {
         std::unique_lock<std::mutex> guard{lock_};
-        while (!available()) {
+        while (!unlocked_available()) {
             notifier_.wait(guard);
         }
         return unlocked_dequeue();
     }
 
-    inline bool available() { return write_idx_ - read_idx_ != 0; }
+    inline bool available() {
+        std::unique_lock<std::mutex> guard{lock_};
+        return unlocked_available();
+    }
+
 
  private:
-    inline T&& unlocked_dequeue() { return std::move(buf_[read_idx_++]); }
+    inline T&& unlocked_dequeue() { return std::move(buf_[read_idx_++ % buf_.size()]); }
+    inline bool unlocked_available() { return write_idx_ - read_idx_ != 0; }
 
     std::mutex lock_;
     std::condition_variable notifier_;
-    size_t read_idx_;
-    size_t write_idx_;
+    std::atomic<size_t> read_idx_;
+    std::atomic<size_t> write_idx_;
     std::array<T, SIZE> buf_;
 };
 
