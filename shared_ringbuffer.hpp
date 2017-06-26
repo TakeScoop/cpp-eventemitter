@@ -6,6 +6,7 @@
 #include <array>
 #include <memory>
 #include <mutex>
+#include <thread>
 
 /// Multi-consumer, multi-producer, condition_variable signalled Shared
 /// ringbuffer (contiguous memory; mutex)
@@ -47,8 +48,9 @@ class RingBuffer {
     ///
     /// @param[in] val - the value to enqueue
     void enqueue(T&& val) {
-        while (!enqueue_nonblocking(std::move(val)))
-            ;
+        while (!enqueue_nonblocking(std::move(val))) {
+            std::this_thread::yield();
+        }
     }
 
     /// Dequeue an element into val
