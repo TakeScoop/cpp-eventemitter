@@ -44,7 +44,7 @@ TEST_CASE("Verify enqueue and dequeue non-blocking") {
 }
 
 TEST_CASE("Test that the writer blocks correctly when ringbuffer is full") {
-    std::atomic<bool> write_done;
+    std::atomic<bool> write_done{false};
     std::atomic<bool> next{false};
 
     std::mutex lock;

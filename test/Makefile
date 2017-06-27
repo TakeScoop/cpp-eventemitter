@@ -7,7 +7,7 @@ test: $(TESTS)
 	npm run jstests
 
 $(TESTS): $(TEST_INPUTS)
-	g++ -std=c++11 -ggdb -Wall -Wextra -isystem $(CATCHHEADER) -o $@ $< 
+	g++ -std=c++11 -ggdb -Wall -Wextra -isystem $(CATCHHEADER) -o $@ $<
 
 clean:
 	rm $(TESTS)
