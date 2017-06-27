@@ -3,6 +3,7 @@
 #define _GLPK_RINGBUFFER_H
 
 #include <algorithm>
+#include <condition_variable>
 #include <array>
 #include <memory>
 #include <mutex>
