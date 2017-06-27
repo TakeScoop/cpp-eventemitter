@@ -5,8 +5,8 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-typedef void (*eventemitter_fn)(const char*, const char*);
-typedef void (*eventemitter_fn_r)(const void* sender, const char*, const char*);
+typedef int (*eventemitter_fn)(const char*, const char*);
+typedef int (*eventemitter_fn_r)(const void* sender, const char*, const char*);
 #ifdef __cplusplus
 };
 #endif

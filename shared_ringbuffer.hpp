@@ -13,7 +13,7 @@
 /// ringbuffer (contiguous memory; mutex)
 template <typename T, size_t SIZE>
 class RingBuffer {
-    constexpr static bool divides_evenly(int v) { return (static_cast<size_t>(-1) % v) == v - 1; }
+    constexpr static bool divides_evenly(size_t v) { return (static_cast<size_t>(-1) % v) == v - 1; }
 
     static_assert(divides_evenly(SIZE), "SIZE does not divide 2^64, so behavior on overrun would be erratic");
 
@@ -91,8 +91,8 @@ class RingBuffer {
 
     std::mutex lock_;
     std::condition_variable notifier_;
-    std::atomic<size_t> read_idx_;
-    std::atomic<size_t> write_idx_;
+    size_t read_idx_;
+    size_t write_idx_;
     std::array<T, SIZE> buf_;
 };
 

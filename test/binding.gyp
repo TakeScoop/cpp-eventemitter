@@ -7,7 +7,7 @@
 		"target_conditions": [
 			['OS=="linux"', {
 				"cflags" : ["-std=c++11", "-ggdb", "-Wall", "-Wextra", "-Wno-unused-parameter", "-fexceptions"],
-				"cflags_cc" : ["-std=c++11", "-ggdb", "-Wall", "-Wextra", "-Wno-unused-parameter", "-fexceptions"],
+				"cflags_cc" : ["-std=c++11", "-ggdb", "-Wall", "-Wextra", "-Wno-unused-parameter", "-fexceptions", "-fno-omit-frame-pointer"],
 				"ldflags": [ "-pthread" ],
 			}],
 			['OS=="mac"', {
@@ -16,7 +16,7 @@
 					"CLANG_CXX_LIBRARY": "libc++",
 					"GCC_ENABLE_CPP_EXCEPTIONS": "YES",
 					"MACOSX_DEPLOYMENT_TARGET": "10.10",
-					"OTHER_CPLUSPLUSFLAGS": ["-std=c++11", "-ggdb", "-Wall", "-Wextra", "-Wno-unused-parameter", "-fexceptions"],
+					"OTHER_CPLUSPLUSFLAGS": ["-std=c++11", "-ggdb", "-Wall", "-Wextra", "-Wno-unused-parameter", "-fexceptions", "-fno-omit-frame-pointer"],
 				}
 			}]
 		]
