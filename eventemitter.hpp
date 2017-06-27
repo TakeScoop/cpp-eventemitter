@@ -68,8 +68,8 @@ namespace NodeEvent {
 template <class T>
 class shared_lock {
  public:
-    explicit shared_lock(T& shared_mutex) : shared_lock_(shared_mutex) { shared_lock_.lock_shared(); }
-    ~shared_lock() noexcept { shared_lock_.unlock_shared(); }
+    explicit shared_lock(T& shared_mutex) : shared_lock_(shared_mutex), locked_{false} { lock(); }
+    ~shared_lock() noexcept { unlock(); }
 
     shared_lock(const shared_lock<T>& other) = delete;
     shared_lock& operator=(const shared_lock<T>& other) = delete;
@@ -81,12 +81,18 @@ class shared_lock {
     }
     void swap(shared_lock<T>& other) { std::swap(this->shared_lock_, other.shared_lock_); }
 
-    inline void lock() { shared_lock_.lock_shared(); }
-    inline void unlock() { shared_lock_.unlock_shared(); }
+    inline void lock() { shared_lock_.lock_shared(); locked_ = true; }
+    inline void unlock() {
+        if (locked_) {
+            locked_ = false;
+            shared_lock_.unlock_shared();
+        }
+    }
     inline void try_lock() { shared_lock_.try_lock_shared(); }
 
  private:
     T& shared_lock_;
+    bool locked_;
 };
 }  // namespace NodeEvent
 
@@ -210,7 +216,9 @@ class AsyncQueuedProgressWorker : public Nan::AsyncWorker {
         ///
         /// @param[in] data - data to send, must be array (because it will be free'd via delete[])
         /// @param[in] count - size of array
-        void Send(const T* data, size_t count) const { worker_.SendProgress(data, count); }
+        /// 
+        /// @returns true if successful, false otherwise
+        bool Send(const T* data, size_t count) const { return worker_.SendProgress(data, count); }
 
      private:
         friend void AsyncQueuedProgressWorker::Execute();
@@ -283,10 +291,11 @@ class AsyncQueuedProgressWorker : public Nan::AsyncWorker {
         Execute(sender);
     }
 
-    void SendProgress(const T* data, size_t size) {
+    bool SendProgress(const T* data, size_t size) {
         // use non_blocking and just drop any excessive items
-        buffer_.enqueue_nonblocking({data, size});
+        bool r = buffer_.enqueue_nonblocking({data, size});
         uv_async_send(async_);
+        return r;
     }
 
     // This is invoked as an effect if calling uv_async_send(async_), so executes on the thread that the default
@@ -351,26 +360,26 @@ class AsyncEventEmittingCWorker : public AsyncQueuedProgressWorker<ProgressRepor
                              sender) final override {
         // XXX(jrb): This will not work if the C library is multithreaded, as the c_emitter_func_ will be
         // uninitialized in any threads other than the one we're running in right now
-        emitterFunc([&sender](const char* ev, const char* val) {
+        emitterFunc([&sender](const char* ev, const char* val) -> int {
             // base class uses delete[], so we have to make sure we use new[]
             auto reports = new ProgressReport[1];
             reports[0] = {ev, val};
 
-            sender.Send(reports, 1);
+            return static_cast<int>(sender.Send(reports, 1));
         });
         ExecuteWithEmitter(this->emit);
     }
 
-    static std::function<void(const char*, const char*)> emitterFunc(std::function<void(const char*, const char*)> fn) {
+    static std::function<int(const char*, const char*)> emitterFunc(std::function<int(const char*, const char*)> fn) {
         // XXX(jrb): This will not work if the C library is multithreaded
-        static thread_local std::function<void(const char*, const char*)> c_emitter_func_ = nullptr;
+        static thread_local std::function<int(const char*, const char*)> c_emitter_func_ = nullptr;
         if (fn != nullptr) {
             c_emitter_func_ = fn;
         }
         return c_emitter_func_;
     }
-    // XXX(jrb): This will not work if the C library is multithreaded
-    static void emit(const char* ev, const char* val) { emitterFunc(nullptr)(ev, val); }
+
+    static int emit(const char* ev, const char* val) { return emitterFunc(nullptr)(ev, val); }
     std::shared_ptr<EventEmitter> emitter_;
 };
 
@@ -407,13 +416,14 @@ class AsyncEventEmittingReentrantCWorker : public AsyncQueuedProgressWorker<Prog
         ExecuteWithEmitter(&sender, this->reentrant_emit);
     }
 
-    static void reentrant_emit(const void* sender, const char* ev, const char* value) {
+    static int reentrant_emit(const void* sender, const char* ev, const char* value) {
         if (sender) {
             auto reports = new ProgressReport[1];
             reports[0] = {ev, value};
             auto emitter = static_cast<const ExecutionProgressSender*>(sender);
-            emitter->Send(reports, 1);
+            return static_cast<int>(emitter->Send(reports, 1));
         }
+        return false;
     }
 
     std::shared_ptr<EventEmitter> emitter_;

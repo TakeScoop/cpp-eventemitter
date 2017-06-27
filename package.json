@@ -4,7 +4,7 @@
     "description": "A Native Nan version of EventEmitter that allows C++ (and single-threaded C) to emit to javascript listeners as events happen.",
     "main": "include_dirs.js",
     "scripts": {
-        "test": "cd test; make clean; make test",
+        "test": "cd test; make clean; make alltests",
         "jstests": "cd test; node-gyp configure && node-gyp rebuild && mocha ./js/*-test.js"
     },
     "keywords": [
