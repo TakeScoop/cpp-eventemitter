@@ -91,7 +91,8 @@ class RingBuffer {
 
     inline T&& unlocked_dequeue() {
         auto&& v = std::move(buf_[read_idx_++ % buf_.size()]);
-        notifier_.notify_one();
+        // notify all blocked writers
+        notifier_.notify_all();
         return std::move(v);
     }
 
