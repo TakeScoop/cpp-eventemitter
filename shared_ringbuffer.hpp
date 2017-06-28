@@ -29,27 +29,16 @@ class RingBuffer {
     /// @returns true if successful, false if the buffer was full
     bool enqueue_nonblocking(T&& val) {
         std::unique_lock<std::mutex> guard{lock_};
-
-        // read_idx_ & write_idx_ are unsigned so this subtraction is in the
-        // group $\mathbb{Z}_{2^64}$, and so is overrun safe as long as $buf_.size() \divides 2^64$
-        if (write_idx_ - read_idx_ >= buf_.size()) {
-            return false;
-        }
-
-        buf_[write_idx_ % buf_.size()] = std::move(val);
-        ++write_idx_;
-
-        // Notify under mutex to ensure consistent behavior; rely on wait-morphing for performance
-        notifier_.notify_one();
-        return true;
+        return unlocked_enqueue(std::move(val));
     }
 
     /// Move the value into the queue
     ///
     /// @param[in] val - the value to enqueue
     void enqueue(T&& val) {
-        while (!enqueue_nonblocking(std::move(val))) {
-            std::this_thread::yield();
+        std::unique_lock<std::mutex> guard{lock_};
+        while (!unlocked_enqueue(std::move(val))) {
+            notifier_.wait(guard);
         }
     }
 
@@ -85,7 +74,28 @@ class RingBuffer {
 
 
  private:
-    inline T&& unlocked_dequeue() { return std::move(buf_[read_idx_++ % buf_.size()]); }
+    inline bool unlocked_enqueue(T&& val) {
+        // read_idx_ & write_idx_ are unsigned so this subtraction is in the
+        // group $\mathbb{Z}_{2^64}$, and so is overrun safe as long as $buf_.size() \divides 2^64$
+        if (write_idx_ - read_idx_ >= buf_.size()) {
+            return false;
+        }
+
+        buf_[write_idx_ % buf_.size()] = std::move(val);
+        ++write_idx_;
+
+        // Notify under mutex to ensure consistent behavior; rely on wait-morphing for performance
+        notifier_.notify_one();
+        return true;
+    }
+
+    inline T&& unlocked_dequeue() {
+        auto&& v = std::move(buf_[read_idx_++ % buf_.size()]);
+        // notify all blocked writers
+        notifier_.notify_all();
+        return std::move(v);
+    }
+
     inline bool unlocked_available() { return write_idx_ - read_idx_ != 0; }
 
     std::mutex lock_;
