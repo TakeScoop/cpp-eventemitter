@@ -39,8 +39,7 @@ class RingBuffer {
         buf_[write_idx_ % buf_.size()] = std::move(val);
         ++write_idx_;
 
-        // unlock before notify so we don't put the notified thread back to sleep immediately
-        guard.unlock();
+        // Notify under mutex to ensure consistent behavior; rely on wait-morphing for performance
         notifier_.notify_one();
         return true;
     }
