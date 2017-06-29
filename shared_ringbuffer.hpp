@@ -1,6 +1,6 @@
 #pragma once
-#ifndef _GLPK_RINGBUFFER_H
-#define _GLPK_RINGBUFFER_H
+#ifndef _NODE_EVENT_RINGBUFFER_H
+#define _NODE_EVENT_RINGBUFFER_H
 
 #include <algorithm>
 #include <condition_variable>
