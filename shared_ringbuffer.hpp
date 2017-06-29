@@ -67,6 +67,7 @@ class RingBuffer {
         return unlocked_dequeue();
     }
 
+    /// @returns true if the ringbuffer is not full, false otherwise
     inline bool available() {
         std::unique_lock<std::mutex> guard{lock_};
         return unlocked_available();
