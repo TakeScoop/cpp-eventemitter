@@ -65,6 +65,8 @@ void swap<NodeEvent::uv_rwlock&>(NodeEvent::uv_rwlock& lhs, NodeEvent::uv_rwlock
 
 namespace NodeEvent {
 
+/// shared_lock is a simplifed implementation of C++14's std::shared_lock. I skipped most of the complexity of that
+/// impl because I don't need it
 template <class T>
 class shared_lock {
  public:
@@ -81,13 +83,18 @@ class shared_lock {
     }
     void swap(shared_lock<T>& other) { std::swap(this->shared_lock_, other.shared_lock_); }
 
-    inline void lock() { shared_lock_.lock_shared(); locked_ = true; }
+    inline void lock() {
+        shared_lock_.lock_shared();
+        locked_ = true;
+    }
+
     inline void unlock() {
         if (locked_) {
             locked_ = false;
             shared_lock_.unlock_shared();
         }
     }
+
     inline void try_lock() { shared_lock_.try_lock_shared(); }
 
  private:
@@ -156,8 +163,9 @@ class EventEmitter {
     /// Receiver represents a callback that will receive events that are fired
     class Receiver {
      public:
-        /// @params[in] callback - the callback to fire, should take a single argument (which will be a string)
+        /// @param[in] callback - the callback to fire, should take a single argument (which will be a string)
         explicit Receiver(Nan::Callback* callback) : callback_(callback) {}
+
         /// notify the callback by building an AsyncWorker and scheduling it via Nan::AsyncQueueWorker()
         ///
         /// @param[in] value - the string value to send to the callback
@@ -167,10 +175,6 @@ class EventEmitter {
         }
 
      private:
-        /// A worker is an implementation of Nan::AsyncWorker that uses the HandleOKCallback method (which is
-        /// guaranteed to execute in the thread that can access v8 structures) to invoke the callback passed in with
-        /// the string value passed to the constructor
-
         Nan::Callback* callback_;
     };
 
@@ -178,10 +182,18 @@ class EventEmitter {
     class ReceiverList {
      public:
         ReceiverList() : receivers_list_(), receivers_list_lock_() {}
+
+        /// Adds a callback to the end of the receivers_list
+        ///
+        /// @param[in] cb - the callback to add to the list
         void emplace_back(Nan::Callback* cb) {
             std::lock_guard<std::mutex> guard{receivers_list_lock_};
             receivers_list_.emplace_back(std::make_shared<Receiver>(cb));
         }
+
+        /// notify all receivers
+        ///
+        /// @param[in] value - the string to send to all receivers
         void emit(const std::string& value) {
             std::lock_guard<std::mutex> guard{receivers_list_lock_};
             for (auto& receiver : receivers_list_) {
@@ -195,7 +207,6 @@ class EventEmitter {
     };
 
     uv_rwlock receivers_lock_;
-    // std::shared_timed_mutex receivers_lock_;
     std::unordered_map<std::string, std::shared_ptr<ReceiverList>> receivers_;
 };
 
@@ -216,8 +227,8 @@ class AsyncQueuedProgressWorker : public Nan::AsyncWorker {
         ///
         /// @param[in] data - data to send, must be array (because it will be free'd via delete[])
         /// @param[in] count - size of array
-        /// 
-        /// @returns true if successful, false otherwise
+        ///
+        /// @returns true if successfully enqueued, false otherwise
         bool Send(const T* data, size_t count) const { return worker_.SendProgress(data, count); }
 
      private:
@@ -231,8 +242,8 @@ class AsyncQueuedProgressWorker : public Nan::AsyncWorker {
     ///                      HandleOKCallback with no arguments, and called from HandleErrorCallback with the errors
     ///                      reported (if any)
     explicit AsyncQueuedProgressWorker(Nan::Callback* callback) : AsyncWorker(callback), buffer_() {
-        async_ = new uv_async_t();
-        uv_async_init(uv_default_loop(), async_, asyncNotifyProgressQueue);
+        async_ = std::unique_ptr<uv_async_t>(new uv_async_t());
+        uv_async_init(uv_default_loop(), async_.get(), asyncNotifyProgressQueue);
         async_->data = this;
     }
 
@@ -247,7 +258,6 @@ class AsyncQueuedProgressWorker : public Nan::AsyncWorker {
     /// same as AsyncWorker's, except checks if callback is set first
     virtual void HandleErrorCallback() override {
         Nan::HandleScope scope;
-
         if (callback) {
             v8::Local<v8::Value> argv[] = {v8::Exception::Error(Nan::New<v8::String>(ErrorMessage()).ToLocalChecked())};
             callback->Call(1, argv);
@@ -260,8 +270,8 @@ class AsyncQueuedProgressWorker : public Nan::AsyncWorker {
         if (this->buffer_.available()) {
             HandleProgressQueue();
         }
-        // NOTABUG: this is how Nan does it...
-        uv_close(reinterpret_cast<uv_handle_t*>(async_), AsyncClose);
+        // NOTABUG: Nan uses reinterpret_cast to pass uv_async_t around
+        uv_close(reinterpret_cast<uv_handle_t*>(async_.get()), AsyncClose);
     }
 
     /// Will receive a progress sender, which you can "Send" to.
@@ -294,7 +304,7 @@ class AsyncQueuedProgressWorker : public Nan::AsyncWorker {
     bool SendProgress(const T* data, size_t size) {
         // use non_blocking and just drop any excessive items
         bool r = buffer_.enqueue_nonblocking({data, size});
-        uv_async_send(async_);
+        uv_async_send(async_.get());
         return r;
     }
 
@@ -309,19 +319,11 @@ class AsyncQueuedProgressWorker : public Nan::AsyncWorker {
     // touch v8 data structures
     static void AsyncClose(uv_handle_t* handle) {
         auto worker = static_cast<AsyncQueuedProgressWorker*>(handle->data);
-        // TODO(jrb): see note for async_ as a raw pointer
-        // NOTABUG: this is how Nan does it...
-        delete reinterpret_cast<uv_async_t*>(handle);
         delete worker;
     }
 
     RingBuffer<std::pair<const T*, size_t>, SIZE> buffer_;
-    // TODO(jrb): std::unique_ptr<uv_async_t> async_;
-    // unsure of the lifetime of the object; in several places it looks like leaks of workers would be made far
-    // worse due to leaking the underlying handle too; so probably best to delete the handle via Destroy and then go
-    // around and try to find all the leaks of the Worker's themselves and delete (or smart-pointer them) them so
-    // their DTOR's do get called
-    uv_async_t* async_;
+    std::unique_ptr<uv_async_t> async_;
 };
 
 /// AsyncEventEmittingCWorker is a specialization of an AsyncQueuedProgressWorker which is suitable for invoking
