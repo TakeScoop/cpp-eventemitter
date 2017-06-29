@@ -7,10 +7,6 @@
 #include <uv.h>
 
 namespace NodeEvent {
-#ifndef UNUSED
-#define UNUSED(x) (void)(x)
-#endif
-
 /// To avoid requiring c++14, using an adaptor for uv locks to make them behave like std::mutex so they can be used with
 /// std::lock_guard and std::unique_lock and std:shared_lock (but not using std::shared_lock to avoid c++14)
 class uv_rwlock {
@@ -23,7 +19,8 @@ class uv_rwlock {
 
     uv_rwlock(uv_rwlock&& other) : lock_(std::move(other.lock_)) {}
 
-    uv_rwlock& operator=(uv_rwlock& other) {
+    uv_rwlock& operator=(uv_rwlock&& other) {
+        uv_rwlock_destroy(&lock_);
         lock_ = std::move(other.lock_);
         return *this;
     }
