@@ -67,7 +67,7 @@ class AsyncQueuedProgressWorker : public Nan::AsyncWorker {
     /// close our async_t handle and free resources (via AsyncClose method)
     virtual void Destroy() override {
         // Destroy happens in the v8 main loop; so we can flush out the Progress queue here before destroying
-        if (this->buffer_.available()) {
+        if (this->buffer_.read_available()) {
             HandleProgressQueue();
         }
         // NOTABUG: Nan uses reinterpret_cast to pass uv_async_t around
@@ -88,7 +88,7 @@ class AsyncQueuedProgressWorker : public Nan::AsyncWorker {
  private:
     void HandleProgressQueue() {
         std::pair<const T*, size_t> elem;
-        while (this->buffer_.dequeue_nonblocking(elem)) {
+        while (this->buffer_.pop(elem)) {
             HandleProgressCallback(elem.first, elem.second);
             if (elem.second > 0) {
                 delete[] elem.first;
@@ -103,7 +103,7 @@ class AsyncQueuedProgressWorker : public Nan::AsyncWorker {
 
     bool SendProgress(const T* data, size_t size) {
         // use non_blocking and just drop any excessive items
-        bool r = buffer_.enqueue_nonblocking({data, size});
+        bool r = buffer_.push({data, size});
         uv_async_send(async_.get());
         return r;
     }

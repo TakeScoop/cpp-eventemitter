@@ -18,31 +18,32 @@ TEST_CASE("Verify enqueue and dequeue non-blocking") {
     RingBuffer<std::string, 2> buf;
 
     // Enqueue 2 elements
-    bool success = buf.enqueue_nonblocking("Test 1");
+    bool success = buf.push("Test 1");
     REQUIRE(true == success);
 
-    success = buf.enqueue_nonblocking("Test 2");
+    success = buf.push("Test 2");
     REQUIRE(true == success);
 
     // Queue is full, should return false
-    success = buf.enqueue_nonblocking("Test 3");
+    success = buf.push("Test 3");
     REQUIRE(false == success);
 
     std::string out;
     // Dequeue 2 elements
-    success = buf.dequeue_nonblocking(out);
+    success = buf.pop(out);
     REQUIRE("Test 1" == out);
     REQUIRE(true == success);
 
-    success = buf.dequeue_nonblocking(out);
+    success = buf.pop(out);
     REQUIRE(true == success);
     REQUIRE("Test 2" == out);
 
     // Queue is empty, should return false
-    success = buf.dequeue_nonblocking(out);
+    success = buf.pop(out);
     REQUIRE(false == success);
 }
 
+#ifndef HAVE_BOOST
 TEST_CASE("Test that the writer blocks correctly when ringbuffer is full") {
     std::atomic<bool> write_done{false};
     std::atomic<bool> next{false};
@@ -53,12 +54,12 @@ TEST_CASE("Test that the writer blocks correctly when ringbuffer is full") {
     std::unique_lock<std::mutex> guard{lock};
     std::condition_variable cond;
     auto writer = std::thread([&write_done, &buf, &next, &cond]() {
-        buf.enqueue("Test 1");  // doesn't block
-        buf.enqueue("Test 2");  // doesn't block
+        buf.push_blocking("Test 1");  // doesn't block
+        buf.push_blocking("Test 2");  // doesn't block
         next.store(true, std::memory_order_release);
         cond.notify_one();
 
-        buf.enqueue("Test 3");  // blocks
+        buf.push_blocking("Test 3");  // blocks
         write_done.store(true, std::memory_order_release);
         cond.notify_one();
     });
@@ -88,7 +89,7 @@ TEST_CASE("Test that the writer blocks correctly when ringbuffer is full") {
     timer.detach();
 
     std::string out;
-    bool success = buf.dequeue_nonblocking(out);
+    bool success = buf.pop(out);
     REQUIRE(true == success);
     REQUIRE("Test 1" == out);
 
@@ -102,15 +103,14 @@ TEST_CASE("Test that the writer blocks correctly when ringbuffer is full") {
 
 TEST_CASE("Test that the reader blocks correctly when ringbuffer is empty") {
     std::atomic<bool> read_done{false};
-    std::atomic<bool> next{false};
-
+    std::atomic<bool> next{false}; 
     std::mutex lock;
     RingBuffer<std::string, 2> buf;
 
     std::unique_lock<std::mutex> guard{lock};
     std::condition_variable cond;
     auto reader = std::thread([&read_done, &buf, &cond]() {
-        string v = buf.dequeue();
+        string v = buf.pop_blocking();
         REQUIRE("Test 1" == v);
         read_done.store(true, std::memory_order_acq_rel);
         cond.notify_one();
@@ -119,7 +119,7 @@ TEST_CASE("Test that the reader blocks correctly when ringbuffer is empty") {
     // Make sure we give the reader time to block on something
     std::this_thread::sleep_for(std::chrono::milliseconds(10));
 
-    buf.enqueue_nonblocking("Test 1");
+    buf.push("Test 1");
 
     auto start = std::chrono::steady_clock::now();
     auto now = std::chrono::steady_clock::now();
@@ -140,12 +140,13 @@ TEST_CASE("Test that the reader blocks correctly when ringbuffer is empty") {
 
 TEST_CASE("Test that the ringbuffer cycles") {
     typedef size_t TestType;
-#define enqueue(VALUE) do { auto _t = new TestType[1]; _t[0] = VALUE; buf.enqueue(_t); } while(0)
-#define dequeue(VALUE) do { auto _t = buf.dequeue(); REQUIRE(_t[0] == VALUE); delete[] _t; } while(0)
+#define enqueue(VALUE) do { auto _t = new TestType[1]; _t[0] = VALUE; buf.push_blocking(_t); } while(0)
+#define dequeue(VALUE) do { auto _t = buf.pop_blocking(); REQUIRE(_t[0] == VALUE); delete[] _t; } while(0)
     RingBuffer<const TestType*, 4> buf;
 
-    for(int i = 0; i < 50; ++i) {
+    for(size_t i = 0; i < 50; ++i) {
         enqueue(i);
         dequeue(i);
     }
 } 
+#endif
