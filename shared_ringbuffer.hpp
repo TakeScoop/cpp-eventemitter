@@ -11,14 +11,14 @@
 
 #ifdef HAVE_BOOST
 
-/// XXX(jrb): This fundimentally changes the behavior of this ringbuffer to single-producer/single-consumer. Make sure
-/// you ensure that any producers correctly guard against multiple producers themselves single-consumer, single-producer
-/// low-latency lockfree ringbuffer from boost
+/// XXX(jrb): This fundamentally changes the behavior of this ringbuffer to single-producer/single-consumer. You must 
+/// ensure that there can only ever be a single producer at a time via external synchronization.
 ///
 /// Sadly, cannot use the multi-producer/multi-consumer because boost::lockfree::queue doesn't allow non-trivial
 /// destructors.
 #include <boost/lockfree/spsc_queue.hpp>
 #include <boost/lockfree/policies.hpp>
+////single-consumer, single-producer low-latency lockfree ringbuffer from boost
 template <typename T, size_t SIZE>
 using RingBuffer = boost::lockfree::spsc_queue<T, boost::lockfree::capacity<SIZE> >;
 

@@ -138,15 +138,78 @@ TEST_CASE("Test that the reader blocks correctly when ringbuffer is empty") {
     reader.join();
 }
 
-TEST_CASE("Test that the ringbuffer cycles") {
-    typedef size_t TestType;
+typedef size_t TestType;
 #define enqueue(VALUE) do { auto _t = new TestType[1]; _t[0] = VALUE; buf.push_blocking(_t); } while(0)
 #define dequeue(VALUE) do { auto _t = buf.pop_blocking(); REQUIRE(_t[0] == VALUE); delete[] _t; } while(0)
+
+TEST_CASE("Test that the ringbuffer cycles") {
     RingBuffer<const TestType*, 4> buf;
 
     for(size_t i = 0; i < 50; ++i) {
         enqueue(i);
         dequeue(i);
     }
-} 
+}
+
+TEST_CASE("Test multi-producer/multi-consumer") {
+    std::vector<std::thread> producers;
+    std::vector<std::thread> consumers;
+    producers.resize(10);
+    consumers.resize(10);
+
+
+
+    RingBuffer<const TestType*, 128> buf;
+    std::atomic<bool> producer_stop{false};
+    std::atomic<bool> consumer_stop{false};
+    std::array<size_t, 10> producer_bucket_counts{{0}};
+    std::array<size_t, 10> consumer_bucket_counts{{0}};
+
+    for (size_t n = 0; n < 10; ++n) {
+        producers.emplace_back([n, &producer_bucket_counts, &buf, &producer_stop]() {
+            while (!producer_stop.load()) {
+                enqueue(1);
+                ++producer_bucket_counts[n];
+            }
+        });
+
+        consumers.emplace_back([n, &consumer_bucket_counts, &buf, &consumer_stop]() {
+            while (!consumer_stop.load()) {
+                while(buf.read_available()) {
+                    const size_t* m;
+                    if(buf.pop(m)) {
+                        delete m;
+                        ++consumer_bucket_counts[n];
+                    }
+                }
+            }
+        });
+    }
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    producer_stop = true;
+    for (auto& p : producers) {
+        if (p.joinable()) {
+            p.join();
+        }
+    }
+    consumer_stop = true;
+    for (auto& c : consumers) {
+        if (c.joinable()) {
+            c.join();
+        }
+    }
+    size_t producer_total = 0;
+    for (size_t p : producer_bucket_counts) {
+        REQUIRE(p > 0);
+        producer_total += p;
+    }
+    size_t consumer_total = 0;
+    for (size_t c : consumer_bucket_counts) {
+        REQUIRE(c > 0);
+        consumer_total += c;
+    }
+    REQUIRE(consumer_total == producer_total);
+}
+
 #endif
