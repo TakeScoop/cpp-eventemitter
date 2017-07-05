@@ -57,7 +57,7 @@ class EventEmitter {
     /// @param[in] value - a string to emit
     ///
     /// @returns true if the event has listeners, false otherwise
-    virtual bool emit(const std::string& ev, const std::string& value) {
+    virtual bool emit(const std::string& ev, const std::string& value) const {
         shared_lock<uv_rwlock> master_lock{receivers_lock_};
         auto it = receivers_.find(ev);
         if (it == receivers_.end()) {
@@ -79,7 +79,7 @@ class EventEmitter {
         /// notify the callback by building an AsyncWorker and scheduling it via Nan::AsyncQueueWorker()
         ///
         /// @param[in] value - the string value to send to the callback
-        void notify(const std::string& value) {
+        void notify(const std::string& value) const {
             v8::Local<v8::Value> info[] = {Nan::New<v8::String>(value).ToLocalChecked()};
             callback_->Call(1, info);
         }
@@ -97,15 +97,15 @@ class EventEmitter {
         ///
         /// @param[in] cb - the callback to add to the list
         void emplace_back(Nan::Callback* cb) {
-            std::lock_guard<std::mutex> guard{receivers_list_lock_};
+            std::lock_guard<uv_rwlock> guard{receivers_list_lock_};
             receivers_list_.emplace_back(std::make_shared<Receiver>(cb));
         }
 
         /// notify all receivers
         ///
         /// @param[in] value - the string to send to all receivers
-        void emit(const std::string& value) {
-            std::lock_guard<std::mutex> guard{receivers_list_lock_};
+        void emit(const std::string& value) const {
+            shared_lock<uv_rwlock> guard{receivers_list_lock_};
             for (auto& receiver : receivers_list_) {
                 receiver->notify(value);
             }
@@ -113,10 +113,10 @@ class EventEmitter {
 
      private:
         std::vector<std::shared_ptr<Receiver>> receivers_list_;
-        std::mutex receivers_list_lock_;
+        mutable uv_rwlock receivers_list_lock_;
     };
 
-    uv_rwlock receivers_lock_;
+    mutable uv_rwlock receivers_lock_;
     std::unordered_map<std::string, std::shared_ptr<ReceiverList>> receivers_;
 };
 
