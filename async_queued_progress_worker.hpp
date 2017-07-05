@@ -85,6 +85,13 @@ class AsyncQueuedProgressWorker : public Nan::AsyncWorker {
     /// @param[in] size - size of the array
     virtual void HandleProgressCallback(const T* data, size_t size) = 0;
 
+    /// Execute implements the Nan::AsyncWorker interface. It should not be overridden, override
+    /// virtual void Execute(const ExecutionProgressSender& progress) instead
+    void Execute() final override {
+        ExecutionProgressSender sender{*this};
+        Execute(sender);
+    }
+
  private:
     void HandleProgressQueue() {
         std::pair<const T*, size_t> elem;
@@ -94,11 +101,6 @@ class AsyncQueuedProgressWorker : public Nan::AsyncWorker {
                 delete[] elem.first;
             }
         }
-    }
-
-    void Execute() final override {
-        ExecutionProgressSender sender{*this};
-        Execute(sender);
     }
 
     bool SendProgress(const T* data, size_t size) {
