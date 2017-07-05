@@ -2,11 +2,9 @@
 #ifndef _NODE_EVENT_ASYNC_EVENT_EMITTING_REENTRANT_C_WORKER
 #define _NODE_EVENT_ASYNC_EVENT_EMITTING_REENTRANT_C_WORKER
 #include <functional>
-
-#include <uv.h>
+#include <memory>
 
 #include "cemitter.h"
-#include "shared_ringbuffer.hpp"
 #include "async_queued_progress_worker.hpp"
 #include "eventemitter_impl.hpp"
 
