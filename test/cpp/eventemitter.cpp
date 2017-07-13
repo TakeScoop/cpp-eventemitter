@@ -19,13 +19,13 @@ class TestWorker : public AsyncEventEmittingCWorker<16> {
         for (int32_t i = 0; i < n_; ++i) {
             stringstream ss;
             ss << "Test" << i;
-            while(!emitter("test", ss.str().c_str())){
+            while (!emitter("test", ss.str().c_str())) {
                 std::this_thread::yield();
             }
-            while(!emitter("test2", ss.str().c_str())){
+            while (!emitter("test2", ss.str().c_str())) {
                 std::this_thread::yield();
             }
-            while(!emitter("test3", ss.str().c_str())){
+            while (!emitter("test3", ss.str().c_str())) {
                 std::this_thread::yield();
             }
         }
@@ -44,13 +44,13 @@ class TestReentrantWorker : public AsyncEventEmittingReentrantCWorker<16> {
         for (int32_t i = 0; i < n_; ++i) {
             stringstream ss;
             ss << "Test" << i;
-            while(!emitter((void*)sender, "test", ss.str().c_str())) {
+            while (!emitter((void*)sender, "test", ss.str().c_str())) {
                 std::this_thread::yield();
             }
-            while(!emitter((void*)sender, "test2", ss.str().c_str())) {
+            while (!emitter((void*)sender, "test2", ss.str().c_str())) {
                 std::this_thread::yield();
             }
-            while(!emitter((void*)sender, "test3", ss.str().c_str())) {
+            while (!emitter((void*)sender, "test3", ss.str().c_str())) {
                 std::this_thread::yield();
             }
         }

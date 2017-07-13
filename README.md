@@ -157,3 +157,17 @@ NODE_MODULE(NanObject, InitAll);
 
 ```
 
+By default, this module uses a multiple-producer, multiple-consumer ringbuffer
+using a mutex for synchronization. With EventEmitter, there can really only
+ever be a single consumer, and that's the thread running the main loop; however
+there could be multiple producers. *IF* you can guarantee that you will only
+ever have a single producer thread emitting at a time via some external
+synchronization method, and you have boost available, you can define
+"HAVE_BOOST" to enable the use of boost::lockfree::spsc_queue, which will
+provide much lower latency, which could be particularly important in your
+worker thread if emitting occurs at a high rate. As an example of where you
+might benefit from this, if you have an object which has a single emitter per
+instance, and you only permit a single asynchronous method to be invoked on
+that instance at any one time, then you can safely use the higher-performing
+boost::lockfree::spsc_queue 
+
