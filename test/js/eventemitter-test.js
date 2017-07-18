@@ -8,7 +8,7 @@ describe('Verify EventEmitter Single', function() {
         let n = 100;
         let k = 0;
         thing.on('test', function(ev) { 
-            expect(ev).to.be.a.string
+            expect(ev).to.be.a.string()
             expect(ev).to.equal('Test' + k++)
             if(k === n) {
                 done();
@@ -25,16 +25,16 @@ describe('Verify EventEmitter Multi', function() {
         let n = 300;
         let k = [0,0,0];
         thing.on('test', function(ev) { 
-            expect(ev).to.be.a.string
+            expect(ev).to.be.a.string()
             expect(ev).to.equal('Test' + k[0]++)
         })
 
         thing.on('test2', function(ev) {
-            expect(ev).to.be.a.string
+            expect(ev).to.be.a.string()
             expect(ev).to.equal('Test' + k[1]++) 
         })
         thing.on('test3', function(ev) {
-            expect(ev).to.be.a.string
+            expect(ev).to.be.a.string()
             expect(ev).to.equal('Test' + k[2]++)
 
             if(k[2] === n) {
@@ -53,7 +53,7 @@ describe('Verify EventEmitter Reentrant Single', function() {
         let n = 100;
         let k = 0;
         thing.on('test', function(ev) {
-            expect(ev).to.be.a.string
+            expect(ev).to.be.a.string()
             expect(ev).to.equal('Test' + k++)
             if(k === n) {
                 done();
@@ -70,16 +70,16 @@ describe('Verify EventEmitter Reentrant Multi', function() {
         let n = 300;
         let k = [0,0,0];
         thing.on('test', function(ev) {
-            expect(ev).to.be.a.string
+            expect(ev).to.be.a.string()
             expect(ev).to.equal('Test' + k[0]++)
         })
 
         thing.on('test2', function(ev) {
-            expect(ev).to.be.a.string
+            expect(ev).to.be.a.string()
             expect(ev).to.equal('Test' + k[1]++)
         })
         thing.on('test3', function(ev) {
-            expect(ev).to.be.a.string
+            expect(ev).to.be.a.string()
             expect(ev).to.equal('Test' + k[2]++)
 
             if(k[2] === n) {
