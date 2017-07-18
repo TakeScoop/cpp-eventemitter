@@ -1,6 +1,6 @@
 {
   "name": "cpp-eventemitter",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "A Native Nan version of EventEmitter that allows C++ and wrapped C to emit to javascript listeners as events happen.",
   "main": "include_dirs.js",
   "scripts": {
