@@ -13,4 +13,4 @@ $(TESTS): $(TEST_INPUTS)
 	g++ -std=c++11 -ggdb -Wall -Wextra -isystem $(CATCHHEADER) -o $@ $< -lpthread
 
 clean:
-	rm $(TESTS)
+	rm -f $(TESTS) || true

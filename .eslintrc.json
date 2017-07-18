@@ -1,0 +1,3 @@
+{
+    "extends": "@scoop/eslint-config-scoop"
+}
