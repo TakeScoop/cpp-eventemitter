@@ -1,8 +1,4 @@
 'use strict'
-/* global describe */
-/* eslint no-undef: "off" */
-/* global it */
-/* eslint no-undef: "off" */
 
 const expect = require('code').expect
 const testRoot = require('path').resolve(__dirname, '..')

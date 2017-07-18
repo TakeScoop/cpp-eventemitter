@@ -1,0 +1,12 @@
+{
+    "globals": {
+        "before": true,
+        "beforeEach": true,
+        "after": true,
+        "afterEach": true,
+        "expect": true,
+        "rootRequire": true,
+        "describe": true,
+        "it": true
+    }
+}
