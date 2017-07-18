@@ -4,8 +4,9 @@
   "description": "A Native Nan version of EventEmitter that allows C++ and wrapped C to emit to javascript listeners as events happen.",
   "main": "include_dirs.js",
   "scripts": {
-    "test": "cd test && make clean && make alltests",
-    "jstests": "cd test && node-gyp configure && node-gyp rebuild && mocha ./js/*-test.js"
+    "test": "eslint . && cd test && make clean && make alltests",
+    "jstests": "cd test && node-gyp configure && node-gyp rebuild && mocha ./js/*-test.js",
+    "lint": "eslint ."
   },
   "keywords": [
     "nan",
@@ -20,8 +21,11 @@
   "author": "Jamie Beverly",
   "license": "MIT",
   "devDependencies": {
+    "@scoop/eslint-config-scoop": "^3.1.0",
     "catch": "^1.0.48",
     "code": "^4.1.0",
+    "eslint": "^3.19.0",
+    "eslint-plugin-dependencies": "^2.4.0",
     "mocha": "^3.4.2",
     "node-gyp": "^3.6.2",
     "path": "^0.12.7"
