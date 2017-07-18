@@ -5,7 +5,7 @@
   "main": "include_dirs.js",
   "scripts": {
     "test": "eslint . && cd test && make clean && make alltests",
-    "jstests": "cd test && node-gyp configure && node-gyp rebuild && mocha ./js/*-test.js",
+    "jstests": "cd test && node-gyp configure && node-gyp rebuild && mocha ./js/*.js",
     "lint": "eslint ."
   },
   "keywords": [
