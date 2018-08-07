@@ -100,6 +100,11 @@ class EventEmitter {
             callback_->Call(1, info);
         }
 
+        ~Receiver() {
+            callback_->Reset();
+            delete callback_;
+        }
+
      private:
         Nan::Callback* callback_;
     };
