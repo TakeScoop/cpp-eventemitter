@@ -29,16 +29,16 @@ namespace NodeEvent {
 #define UNUSED(x) (void)(x)
 #endif
 
-template <size_t SIZE>
-class AsyncEventEmittingReentrantCWorker : public AsyncQueuedProgressWorker<EventEmitter::ProgressReport, SIZE> {
+template <size_t SIZE, class CRTP>
+class AsyncEventEmittingReentrantCWorker : public AsyncQueuedProgressWorker<EventEmitter::ProgressReport, SIZE, CRTP> {
  public:
-    typedef typename AsyncQueuedProgressWorker<EventEmitter::ProgressReport, SIZE>::ExecutionProgressSender ExecutionProgressSender;
+    typedef typename AsyncQueuedProgressWorker<EventEmitter::ProgressReport, SIZE, CRTP>::ExecutionProgressSender ExecutionProgressSender;
     /// @param[in] callback - the callback to invoke after Execute completes. (unless overridden, is called from
     ///                      HandleOKCallback with no arguments, and called from HandleErrorCallback with the errors
     ///                      reported (if any)
     /// @param[in] emitter - The emitter object to use for notifying JS callbacks for given events.
     AsyncEventEmittingReentrantCWorker(Nan::Callback* callback, std::shared_ptr<EventEmitter> emitter)
-        : AsyncQueuedProgressWorker<EventEmitter::ProgressReport, SIZE>(callback), emitter_(emitter) {}
+        : AsyncQueuedProgressWorker<EventEmitter::ProgressReport, SIZE, CRTP>(callback), emitter_(emitter) {}
 
     /// emit the EventEmitter::ProgressReport as an event via the given emitter, ignores whether or not the emit is successful
     ///

@@ -33,15 +33,15 @@ namespace NodeEvent {
 /// happen. The emitter will enqueue the events to be picked up and handled by the v8 thread, and so will not block
 /// the worker thread for longer than 3 mutex acquires. If the number of queued events exceeds SIZE, subsequent
 /// events will be silently discarded.
-template <size_t SIZE>
-class AsyncEventEmittingCWorker : public AsyncQueuedProgressWorker<EventEmitter::ProgressReport, SIZE> {
+template <size_t SIZE, class CRTP>
+class AsyncEventEmittingCWorker : public AsyncQueuedProgressWorker<EventEmitter::ProgressReport, SIZE, CRTP> {
  public:
     /// @param[in] callback - the callback to invoke after Execute completes. (unless overridden, is called from
     ///                      HandleOKCallback with no arguments, and called from HandleErrorCallback with the errors
     ///                      reported (if any)
     /// @param[in] emitter - The emitter object to use for notifying JS callbacks for given events.
     AsyncEventEmittingCWorker(Nan::Callback* callback, std::shared_ptr<EventEmitter> emitter)
-        : AsyncQueuedProgressWorker<EventEmitter::ProgressReport, SIZE>(callback), emitter_(emitter) {}
+        : AsyncQueuedProgressWorker<EventEmitter::ProgressReport, SIZE, CRTP>(callback), emitter_(emitter) {}
 
     /// The work you need to happen in a worker thread
     /// @param[in] fn - Function suitable for passing to single-threaded C code (uses a thread_local static)
@@ -60,7 +60,7 @@ class AsyncEventEmittingCWorker : public AsyncQueuedProgressWorker<EventEmitter:
     }
 
  private:
-    virtual void Execute(const typename AsyncQueuedProgressWorker<EventEmitter::ProgressReport, SIZE>::ExecutionProgressSender&
+    virtual void Execute(const typename AsyncQueuedProgressWorker<EventEmitter::ProgressReport, SIZE, CRTP>::ExecutionProgressSender&
                              sender) final override {
         // XXX(jrb): This will not work if the C library is multithreaded, as the c_emitter_func_ will be
         // uninitialized in any threads other than the one we're running in right now

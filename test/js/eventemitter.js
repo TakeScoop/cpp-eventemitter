@@ -1,9 +1,9 @@
 'use strict'
-
 const expect = require('code').expect
 const testRoot = require('path').resolve(__dirname, '..')
 const bindings = require('bindings')({ 'module_root': testRoot, bindings: 'eventemitter' })
 const iterate = require('leakage').iterate
+const Promise = global.Promise
 
 describe('Verify EventEmitter Single', function() {
     it('should invoke the callback for test', function(done) {
@@ -105,6 +105,32 @@ describe('Verify callback memory is reclaimed', function() {
             thing.on('test', function(ev) {
                 v.compare(new Buffer(1000))
             })
+        })
+        done()
+    })
+})
+
+describe('Verify test memory is reclaimed', function() {
+    it('Should not increase memory usage over time', function(done) {
+        this.timeout(15000)
+        iterate.async(() => { 
+            let blocker = true
+            let thing = new bindings.EmitterThing()
+            let v = new Buffer(1000)
+
+            thing.on('test', function(ev) {
+                v.compare(new Buffer(1000))
+                blocker = false
+            })
+            thing.run(1)
+
+            const blocking = Promise.resolve(() => {
+                if (blocker) {
+                    return blocking
+                }
+            })
+
+            return blocking
         })
         done()
     })
