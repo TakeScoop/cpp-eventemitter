@@ -18,9 +18,14 @@ Examples of using The EventEmitter, the first is the non-reentrant
 non-threadsafe version, the second is the threadsafe and reentrant, but
 requires you pass the emitter object around
 
+AsyncWorker uses 'self-destruction', and so the delete operation is deferred
+to run on the main thread via AsyncClose. This delete needs to cast a `void*`
+pointer to its proper type to delete it. At this point, it needs to know the
+sub-class to cast to; and so we see the CRTP to enable this.
+
 ```c++
 
-class TestWorker : public AsyncEventEmittingCWorker<1024> {
+class TestWorker : public AsyncEventEmittingCWorker<1024, TestWorker> {
  public:
     TestWorker(Nan::Callback* callback, std::shared_ptr<EventEmitter> emitter, size_t n)
         : AsyncEventEmittingCWorker(callback, emitter), n_(n) {}
@@ -39,7 +44,7 @@ class TestWorker : public AsyncEventEmittingCWorker<1024> {
     int32_t n_;
 };
 
-class TestReentrantWorker : public AsyncEventEmittingReentrantCWorker<1024> {
+class TestReentrantWorker : public AsyncEventEmittingReentrantCWorker<1024, TestReentrantWorker> {
  public:
     TestReentrantWorker(Nan::Callback* callback, std::shared_ptr<EventEmitter> emitter, size_t n)
         : AsyncEventEmittingReentrantCWorker(callback, emitter), n_(n) {}

@@ -10,7 +10,7 @@ using namespace NodeEvent;
 using namespace Nan;
 using namespace v8;
 
-class TestWorker : public AsyncEventEmittingCWorker<16> {
+class TestWorker : public AsyncEventEmittingCWorker<16, TestWorker> {
  public:
     TestWorker(Nan::Callback* callback, std::shared_ptr<EventEmitter> emitter, size_t n)
         : AsyncEventEmittingCWorker(callback, emitter), n_(n) {}
@@ -35,7 +35,7 @@ class TestWorker : public AsyncEventEmittingCWorker<16> {
     int32_t n_;
 };
 
-class TestReentrantWorker : public AsyncEventEmittingReentrantCWorker<16> {
+class TestReentrantWorker : public AsyncEventEmittingReentrantCWorker<16, TestReentrantWorker> {
  public:
     TestReentrantWorker(Nan::Callback* callback, std::shared_ptr<EventEmitter> emitter, size_t n)
         : AsyncEventEmittingReentrantCWorker(callback, emitter), n_(n) {}

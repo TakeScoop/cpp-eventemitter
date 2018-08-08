@@ -21,6 +21,7 @@
 #include <functional>
 #include <memory>
 #include <string>
+#include <iostream>
 
 #include <nan.h>
 #include <uv.h>
@@ -34,7 +35,8 @@ namespace NodeEvent {
 ///
 /// AsyncQueuedProgressWorker provides a ringbuffer (to avoid reallocations and poor locality of reference) to help
 /// prevent lost progress
-template <class T, size_t SIZE>
+/// Uses CRTP to ensure proper DTOR
+template <class T, size_t SIZE, class CRTP>
 class AsyncQueuedProgressWorker : public Nan::AsyncWorker {
  public:
     class ExecutionProgressSender {
@@ -129,14 +131,14 @@ class AsyncQueuedProgressWorker : public Nan::AsyncWorker {
     // This is invoked as an effect if calling uv_async_send(async_), so executes on the thread that the default
     // loop is running on, so it can safely touch v8 data structures
     static NAUV_WORK_CB(asyncNotifyProgressQueue) {
-        auto worker = static_cast<AsyncQueuedProgressWorker*>(async->data);
+        auto worker = static_cast<CRTP*>(async->data);
         worker->HandleProgressQueue();
     }
 
     // This is invoked after Destroy(), which executes on the thread that the default loop is running on, and so can
     // touch v8 data structures
     static void AsyncClose(uv_handle_t* handle) {
-        auto worker = static_cast<AsyncQueuedProgressWorker*>(handle->data);
+        auto worker = static_cast<CRTP*>(handle->data);
         // Destroy happens in the v8 main loop; so we can flush out the Progress queue here before destroying
         if (worker->buffer_.read_available()) {
             worker->HandleProgressQueue();
