@@ -67,7 +67,11 @@ class AsyncQueuedProgressWorker : public Nan::AsyncWorker {
     virtual void HandleOKCallback() override {
         Nan::HandleScope scope;
         if (callback) {
+#if defined(NODE_8_0_MODULE_VERSION) && (NODE_8_0_MODULE_VERSION > 51)
             callback->Call(0, NULL, async_resource);
+#else
+            callback->Call(0, NULL);
+#endif
         }
     }
 
