@@ -95,7 +95,7 @@ describe('Verify EventEmitter Reentrant Multi', function() {
 })
 
 
-describe('Verify callback memory is reclaimed', function() {
+describe('Verify callback memory is reclaimed, even if callback is not waited on', function() {
     it('Should not increase memory usage over time', function(done) {
         this.timeout(15000)
         iterate(() => {
@@ -110,29 +110,23 @@ describe('Verify callback memory is reclaimed', function() {
     })
 })
 
-describe('Verify test memory is reclaimed', function() {
-    it('Should not increase memory usage over time', function(done) {
+describe('Verify memory allocated in the test-class EmitterThing is reclaimed', function() {
+    it('Should not increase memory usage over time', function() {
         this.timeout(15000)
-        iterate.async(() => { 
-            let blocker = true
-            let thing = new bindings.EmitterThing()
-            let v = new Buffer(1000)
+        return iterate.async(() => { 
+            return new Promise((resolve, reject) => {
+                let thing = new bindings.EmitterThing()
+                let v = new Buffer(1000)
+                let n = 1
 
-            thing.on('test', function(ev) {
-                v.compare(new Buffer(1000))
-                blocker = false
+                thing.on('test', function(ev) {
+                    v.compare(new Buffer(1000))
+                })
+                thing.run(n, function() {
+                    resolve()
+                })
             })
-            thing.run(1)
-
-            const blocking = Promise.resolve(() => {
-                if (blocker) {
-                    return blocking
-                }
-            })
-
-            return blocking
         })
-        done()
     })
 })
 
