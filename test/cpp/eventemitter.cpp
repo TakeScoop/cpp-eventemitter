@@ -100,7 +100,8 @@ class EmittingThing : public Nan::ObjectWrap {
     }
 
     static NAN_METHOD(Run) {
-        if (info.Length() != 1) {
+        Nan::Callback* fn(nullptr);
+        if (info.Length() < 1 || info.Length() > 2) {
             info.GetIsolate()->ThrowException(Nan::TypeError("Wrong number of arguments"));
             return;
         }
@@ -108,16 +109,25 @@ class EmittingThing : public Nan::ObjectWrap {
             info.GetIsolate()->ThrowException(Nan::TypeError("First argument must be number"));
             return;
         }
+        if (info.Length() == 2) {
+            if(info[1]->IsFunction()) {
+                fn = new Nan::Callback(info[1].As<Function>());
+            } else {
+                info.GetIsolate()->ThrowException(Nan::TypeError("Second argument must be function"));
+                return;
+            }
+        }
 
         int32_t n = info[0]->Int32Value();
         auto thing = Nan::ObjectWrap::Unwrap<EmittingThing>(info.Holder());
 
-        TestWorker* worker = new TestWorker(nullptr, thing->emitter_, n);
+        TestWorker* worker = new TestWorker(fn, thing->emitter_, n);
         Nan::AsyncQueueWorker(worker);
     }
 
     static NAN_METHOD(RunReentrant) {
-        if (info.Length() != 1) {
+        Nan::Callback* fn(nullptr);
+        if (info.Length() < 1 || info.Length() > 2) {
             info.GetIsolate()->ThrowException(Nan::TypeError("Wrong number of arguments"));
             return;
         }
@@ -125,11 +135,19 @@ class EmittingThing : public Nan::ObjectWrap {
             info.GetIsolate()->ThrowException(Nan::TypeError("First argument must be number"));
             return;
         }
+        if (info.Length() == 2) {
+            if(info[1]->IsFunction()) {
+                fn = new Nan::Callback(info[1].As<Function>());
+            } else {
+                info.GetIsolate()->ThrowException(Nan::TypeError("Second argument must be function"));
+                return;
+            }
+        }
 
         int32_t n = info[0]->Int32Value();
         auto thing = Nan::ObjectWrap::Unwrap<EmittingThing>(info.Holder());
 
-        TestReentrantWorker* worker = new TestReentrantWorker(nullptr, thing->emitter_, n);
+        TestReentrantWorker* worker = new TestReentrantWorker(fn, thing->emitter_, n);
         Nan::AsyncQueueWorker(worker);
     }
 

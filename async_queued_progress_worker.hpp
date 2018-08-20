@@ -67,7 +67,11 @@ class AsyncQueuedProgressWorker : public Nan::AsyncWorker {
     virtual void HandleOKCallback() override {
         Nan::HandleScope scope;
         if (callback) {
+#if defined(NODE_8_0_MODULE_VERSION) && (NODE_8_0_MODULE_VERSION > 51)
+            callback->Call(0, NULL, async_resource);
+#else
             callback->Call(0, NULL);
+#endif
         }
     }
 
@@ -82,10 +86,6 @@ class AsyncQueuedProgressWorker : public Nan::AsyncWorker {
 
     /// close our async_t handle and free resources (via AsyncClose method)
     virtual void Destroy() override {
-        // Destroy happens in the v8 main loop; so we can flush out the Progress queue here before destroying
-        if (this->buffer_.read_available()) {
-            HandleProgressQueue();
-        }
         // NOTABUG: Nan uses reinterpret_cast to pass uv_async_t around
         uv_close(reinterpret_cast<uv_handle_t*>(async_.get()), AsyncClose);
     }
@@ -137,6 +137,10 @@ class AsyncQueuedProgressWorker : public Nan::AsyncWorker {
     // touch v8 data structures
     static void AsyncClose(uv_handle_t* handle) {
         auto worker = static_cast<AsyncQueuedProgressWorker*>(handle->data);
+        // Destroy happens in the v8 main loop; so we can flush out the Progress queue here before destroying
+        if (worker->buffer_.read_available()) {
+            worker->HandleProgressQueue();
+        }
         delete worker;
     }
 

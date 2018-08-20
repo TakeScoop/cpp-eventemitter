@@ -26,6 +26,7 @@
     "code": "^4.1.0",
     "eslint": "^3.19.0",
     "eslint-plugin-dependencies": "^2.4.0",
+    "leakage": "^0.4.0",
     "mocha": "^3.4.2",
     "node-gyp": "^3.6.2",
     "path": "^0.12.7"
