@@ -72,6 +72,8 @@ class EmittingThing : public Nan::ObjectWrap {
         Nan::SetPrototypeMethod(constructor, "on", On);
         Nan::SetPrototypeMethod(constructor, "run", Run);
         Nan::SetPrototypeMethod(constructor, "runReentrant", RunReentrant);
+        Nan::SetPrototypeMethod(constructor, "removeAllListeners", RemoveAllListeners);
+        Nan::SetPrototypeMethod(constructor, "eventNames", EventNames);
 
         Nan::Set(target, clsName, Nan::GetFunction(constructor).ToLocalChecked());
     };
@@ -124,6 +126,42 @@ class EmittingThing : public Nan::ObjectWrap {
         TestWorker* worker = new TestWorker(fn, thing->emitter_, n);
         Nan::AsyncQueueWorker(worker);
     }
+
+    static NAN_METHOD(RemoveAllListeners) {
+        if (info.Length() > 1) {
+            info.GetIsolate()->ThrowException(Nan::TypeError("Wrong number of arguments"));
+            return;
+        }
+        auto thing = Nan::ObjectWrap::Unwrap<EmittingThing>(info.Holder());
+
+        if (info.Length() == 1) {
+            if (!info[0]->IsString()) {
+                info.GetIsolate()->ThrowException(Nan::TypeError("First argument must be string name of an event"));
+                return;
+            }
+            auto ev = std::string(*v8::String::Utf8Value(info[0]->ToString()));
+            thing->emitter_->removeAllListenersForEvent(ev);
+        } else {
+            thing->emitter_->removeAllListeners();
+        }
+    }
+
+    static NAN_METHOD(EventNames) {
+        if (info.Length() > 0) {
+            info.GetIsolate()->ThrowException(Nan::TypeError("Wrong number of arguments"));
+            return;
+        }
+        auto thing = Nan::ObjectWrap::Unwrap<EmittingThing>(info.Holder());
+        v8::Local<v8::Array> v = v8::Array::New(info.GetIsolate());
+
+        size_t i = 0; 
+        for (auto s : thing->emitter_->eventNames()) {
+            v->Set(i++, v8::String::NewFromUtf8(info.GetIsolate(), s.c_str()));
+        }
+
+        info.GetReturnValue().Set(v);
+    }
+
 
     static NAN_METHOD(RunReentrant) {
         Nan::Callback* fn(nullptr);

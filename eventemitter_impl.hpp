@@ -85,6 +85,17 @@ class EventEmitter {
         receivers_.clear();
     }
 
+    // Return a list of all eventNames
+    virtual std::vector<std::string> eventNames() {
+        std::unique_lock<uv_rwlock> master_lock{receivers_lock_};
+        std::vector<std::string> keys;
+
+        for (auto it : receivers_) {
+            keys.emplace_back(it.first);
+        }
+        return keys;
+    }
+
     /// Emit a value to any registered callbacks for the event
     ///
     /// @param[in] ev - event name
