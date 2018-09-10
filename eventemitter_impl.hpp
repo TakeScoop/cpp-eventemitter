@@ -67,6 +67,35 @@ class EventEmitter {
         it->second->emplace_back(cb);
     }
 
+    /// Remove all listeners for a given event
+    ///
+    /// @param[in] ev - event name
+    virtual void removeAllListenersForEvent(const std::string& ev) {
+        std::unique_lock<uv_rwlock> master_lock{receivers_lock_};
+        auto it = receivers_.find(ev);
+
+        if (it != receivers_.end()) {
+            receivers_.erase(it);
+        }
+    }
+
+    /// Remove all listeners for all events
+    virtual void removeAllListeners() {
+        std::unique_lock<uv_rwlock> master_lock{receivers_lock_};
+        receivers_.clear();
+    }
+
+    // Return a list of all eventNames
+    virtual std::vector<std::string> eventNames() {
+        std::unique_lock<uv_rwlock> master_lock{receivers_lock_};
+        std::vector<std::string> keys;
+
+        for (auto it : receivers_) {
+            keys.emplace_back(it.first);
+        }
+        return keys;
+    }
+
     /// Emit a value to any registered callbacks for the event
     ///
     /// @param[in] ev - event name
