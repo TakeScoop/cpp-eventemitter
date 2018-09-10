@@ -22,7 +22,7 @@ describe('Verify EventEmitter', function() {
             thing.run(n)
         })
 
-        it('should remove listeners for the test event', function(done) {
+        it('should remove listeners for a specific test event', function(done) {
             let thing = new bindings.EmitterThing()
             thing.on('test1', function(ev) { })
             thing.on('test2', function(ev) { })
@@ -30,7 +30,14 @@ describe('Verify EventEmitter', function() {
             expect(thing.eventNames()).to.be.equal(['test2', 'test1'])
             thing.removeAllListeners('test1')
             expect(thing.eventNames()).to.be.equal(['test2'])
+            done()
+        })
+
+        it('should remove all listeners for all events', function(done) {
+            let thing = new bindings.EmitterThing()
             thing.on('test1', function(ev) { })
+            thing.on('test2', function(ev) { })
+
             thing.removeAllListeners()
             expect(thing.eventNames()).to.be.equal([])
             done()
