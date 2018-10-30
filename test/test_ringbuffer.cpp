@@ -112,7 +112,7 @@ TEST_CASE("Test that the reader blocks correctly when ringbuffer is empty") {
     auto reader = std::thread([&read_done, &buf, &cond]() {
         string v = buf.pop_blocking();
         REQUIRE("Test 1" == v);
-        read_done.store(true, std::memory_order_acq_rel);
+        read_done.store(true, std::memory_order_release);
         cond.notify_one();
     });
 
@@ -130,7 +130,7 @@ TEST_CASE("Test that the reader blocks correctly when ringbuffer is empty") {
     });
     timer.detach();
 
-    while (!(read_done.load(std::memory_order_acq_rel)) && (now - start < std::chrono::seconds(1))) {
+    while (!(read_done.load(std::memory_order_acquire)) && (now - start < std::chrono::seconds(1))) {
         cond.wait(guard);
         now = std::chrono::steady_clock::now();
     }
