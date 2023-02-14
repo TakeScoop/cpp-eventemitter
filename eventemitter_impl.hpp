@@ -102,7 +102,7 @@ class EventEmitter {
     /// @param[in] value - a string to emit
     ///
     /// @returns true if the event has listeners, false otherwise
-    virtual bool emit(const std::string& ev, const std::string& value) const {
+    virtual bool emit(Nan::AsyncResource *async_resource, const std::string &ev, const std::string &value) const {
         shared_lock<uv_rwlock> master_lock{receivers_lock_};
         auto it = receivers_.find(ev);
         if (it == receivers_.end()) {
@@ -110,7 +110,7 @@ class EventEmitter {
         }
         master_lock.unlock();
 
-        it->second->emit(value);
+        it->second->emit(async_resource, value);
         return true;
     }
 
@@ -124,9 +124,9 @@ class EventEmitter {
         /// notify the callback by building an AsyncWorker and scheduling it via Nan::AsyncQueueWorker()
         ///
         /// @param[in] value - the string value to send to the callback
-        void notify(const std::string& value) const {
+        void notify(Nan::AsyncResource* async_resource, const std::string& value) const {
             v8::Local<v8::Value> info[] = {Nan::New<v8::String>(value).ToLocalChecked()};
-            callback_->Call(1, info);
+            callback_->Call(1, info, async_resource);
         }
 
         ~Receiver() {
@@ -154,10 +154,10 @@ class EventEmitter {
         /// notify all receivers
         ///
         /// @param[in] value - the string to send to all receivers
-        void emit(const std::string& value) const {
+        void emit(Nan::AsyncResource* async_resource, const std::string& value) const {
             shared_lock<uv_rwlock> guard{receivers_list_lock_};
             for (auto& receiver : receivers_list_) {
-                receiver->notify(value);
+                receiver->notify(async_resource, value);
             }
         }
 

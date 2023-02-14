@@ -48,7 +48,7 @@ class AsyncEventEmittingReentrantCWorker : public AsyncQueuedProgressWorker<Even
     virtual void HandleProgressCallback(const EventEmitter::ProgressReport* report, size_t size) override {
         UNUSED(size);
         Nan::HandleScope scope;
-        emitter_->emit(report[0].first, report[0].second);
+        emitter_->emit(this->async_resource, report[0].first, report[0].second);
     }
 
     /// The work you need to happen in a worker thread

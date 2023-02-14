@@ -56,7 +56,7 @@ class AsyncEventEmittingCWorker : public AsyncQueuedProgressWorker<EventEmitter:
         UNUSED(size);
         Nan::HandleScope scope;
 
-        emitter_->emit(report[0].first, report[0].second);
+        emitter_->emit(this.async_resource, report[0].first, report[0].second);
     }
 
  private:

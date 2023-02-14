@@ -80,7 +80,7 @@ class AsyncQueuedProgressWorker : public Nan::AsyncWorker {
         Nan::HandleScope scope;
         if (callback) {
             v8::Local<v8::Value> argv[] = {v8::Exception::Error(Nan::New<v8::String>(ErrorMessage()).ToLocalChecked())};
-            callback->Call(1, argv);
+            callback->Call(1, argv, async_resource);
         }
     }
 
