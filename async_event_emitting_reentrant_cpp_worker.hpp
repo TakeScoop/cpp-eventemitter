@@ -73,7 +73,7 @@ public:
 
   using EventEmitterFunctionReentrant =
       std::function<int(const ExecutionProgressSender *sender,
-                        const std::string event, const Constructable *value)>;
+                        const std::string event, EventValue value)>;
 
   /// The work you need to happen in a worker thread
   ///
@@ -88,8 +88,7 @@ private:
   }
 
   static int reentrant_emit(const ExecutionProgressSender *sender,
-                            const std::string event,
-                            const Constructable *value) {
+                            const std::string event, EventValue value) {
     if (sender) {
       auto reports = new EventEmitter::ProgressReport[1];
       reports[0] = EventEmitter::ProgressReport{event, value};

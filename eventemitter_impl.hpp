@@ -46,7 +46,7 @@ namespace NodeEvent {
 class EventEmitter {
 public:
   /// A report type, consisting of a key and a value
-  typedef std::pair<std::string, const Constructable *> ProgressReport;
+  typedef std::pair<std::string, std::shared_ptr<Constructable>> ProgressReport;
 
   /// An error indicating the event name is not known
   class InvalidEvent : std::runtime_error {
@@ -111,7 +111,7 @@ public:
   /// @returns true if the event has listeners, false otherwise
   virtual bool emit(Nan::AsyncResource *async_resource, Nan::HandleScope &scope,
                     v8::Isolate *isolate, const std::string &event,
-                    const Constructable *value) const {
+                    EventValue value) const {
     shared_lock<uv_rwlock> master_lock{receivers_lock_};
     auto it = receivers_.find(event);
     if (it == receivers_.end()) {
@@ -136,7 +136,7 @@ private:
     ///
     /// @param[in] value - the string value to send to the callback
     void notify(Nan::AsyncResource *async_resource, Nan::HandleScope &scope,
-                v8::Isolate *isolate, const Constructable *value) const {
+                v8::Isolate *isolate, const EventValue value) const {
       v8::Local<v8::Value> info[] = {value->construct(scope, isolate)};
 
       // or  Nan::TypeError("First argument must be string");
@@ -171,7 +171,7 @@ private:
     ///
     /// @param[in] value - the string to send to all receivers
     void emit(Nan::AsyncResource *async_resource, Nan::HandleScope &scope,
-              v8::Isolate *isolate, const Constructable *value) const {
+              v8::Isolate *isolate, EventValue value) const {
       shared_lock<uv_rwlock> guard{receivers_list_lock_};
       for (auto &receiver : receivers_list_) {
         receiver->notify(async_resource, scope, isolate, value);

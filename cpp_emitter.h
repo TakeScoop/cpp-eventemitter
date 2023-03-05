@@ -29,6 +29,6 @@
 #define _GLPK_EVENTEMITTER_CPP_EMITER_H
 
 using EventEmitterFunction =
-    std::function<int(const std::string event, const Constructable *value)>;
+    std::function<int(const std::string event, const EventValue value)>;
 
 #endif

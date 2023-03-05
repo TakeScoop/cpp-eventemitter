@@ -9,7 +9,7 @@ const bindings = require("bindings")({
 // https://github.com/token-cjg/leakage.git
 
 describe("Verify EventEmitter", function () {
-    /*  describe("Verify EventEmitter Single", function () {
+    describe("Verify EventEmitter Single", function () {
         it("should invoke the callback for test", function (done) {
             let thing = new bindings.EmitterThing()
             let n = 100
@@ -67,14 +67,14 @@ describe("Verify EventEmitter", function () {
 
                 if (k[2] === n) {
                     while (k[0] !== n || k[1] !== n) {
-                        // do nothing 
+                        // do nothing
                     }
                     done()
                 }
             })
             thing.run(n)
         })
-    }) */
+    })
 
     describe("Verify EventEmitter Reentrant Single", function () {
         it("should invoke the callback for test", function (done) {
@@ -82,7 +82,6 @@ describe("Verify EventEmitter", function () {
             let n = 10
             let k = 0
             thing.on("test", function (ev) {
-                console.log("node: " + ev)
                 expect(ev).to.be.a.string()
                 expect(ev).to.equal("Test" + k++)
                 if (k === n) {
@@ -94,7 +93,7 @@ describe("Verify EventEmitter", function () {
         })
     })
 
-    /* describe("Verify EventEmitter Reentrant Multi", function () {
+    describe("Verify EventEmitter Reentrant Multi", function () {
         it("should invoke the callbacks for test, test2, and test3", function (done) {
             let thing = new bindings.EmitterThing()
             let n = 300
@@ -114,43 +113,43 @@ describe("Verify EventEmitter", function () {
 
                 if (k[2] === n) {
                     while (k[0] !== n || k[1] !== n) {
-                        // do nothing 
+                        // do nothing
                     }
                     done()
                 }
             })
             thing.runReentrant(n)
         })
-    }) */
+    })
 
-    /* describe('Verify callback memory is reclaimed, even if callback is not waited on', function() {
-        it('Should not increase memory usage over time', function(done) {
+   /*  describe("Verify callback memory is reclaimed, even if callback is not waited on", function () {
+        it("Should not increase memory usage over time", function (done) {
             this.timeout(15000)
             iterate(() => {
                 let thing = new bindings.EmitterThing()
                 let v = new Buffer(1000)
 
-                thing.on('test', function(ev) {
+                thing.on("test", function (ev) {
                     v.compare(new Buffer(1000))
                 })
             })
             done()
         })
-    }) */
+    })
 
-    /* describe('Verify memory allocated in the test-class EmitterThing is reclaimed', function() {
-        it('Should not increase memory usage over time', function() {
+    describe("Verify memory allocated in the test-class EmitterThing is reclaimed", function () {
+        it("Should not increase memory usage over time", function () {
             this.timeout(15000)
-            return iterate.async(() => { 
+            return iterate.async(() => {
                 return new Promise((resolve, reject) => {
                     let thing = new bindings.EmitterThing()
                     let v = new Buffer(1000)
                     let n = 1
 
-                    thing.on('test', function(ev) {
+                    thing.on("test", function (ev) {
                         v.compare(new Buffer(1000))
                     })
-                    thing.run(n, function() {
+                    thing.run(n, function () {
                         resolve()
                     })
                 })

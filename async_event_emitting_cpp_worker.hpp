@@ -89,7 +89,7 @@ private:
     // c_emitter_func_ will be uninitialized in any threads other than the one
     // we're running in right now
     emitterFunc(
-        [&sender](const std::string event, const Constructable *value) -> int {
+        [&sender](const std::string event, EventValue value) -> int {
           // base class uses delete[], so we have to make sure we use new[]
           auto reports = new EventEmitter::ProgressReport[1];
           reports[0] = EventEmitter::ProgressReport{event, value};
@@ -110,7 +110,7 @@ private:
     return c_emitter_func_;
   }
 
-  static int emit(const std::string event, const Constructable *value) {
+  static int emit(const std::string event, EventValue value) {
     return emitterFunc(nullptr)(event, value);
   }
   std::shared_ptr<EventEmitter> emitter_;

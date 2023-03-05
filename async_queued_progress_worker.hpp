@@ -68,7 +68,7 @@ public:
 
   using EventEmitterFunctionReentrant =
       std::function<int(const ExecutionProgressSender *sender,
-                        const std::string event, const Constructable *value)>;
+                        const std::string event, const EventValue value)>;
 
   /// @param[in] callback - the callback to invoke after Execute completes.
   /// (unless overridden, is called from
@@ -134,9 +134,9 @@ private:
     std::pair<const T *, size_t> elem;
     while (this->buffer_.pop(elem)) {
       HandleProgressCallback(elem.first, elem.second);
-      if (elem.second > 0) {
+      /* if (elem.second > 0) {
         delete[] elem.first;
-      }
+      } */
     }
   }
 

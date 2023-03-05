@@ -20,6 +20,7 @@
  * SOFTWARE.
  */
 
+#include <memory>
 #include <nan.h>
 #include <string>
 #include <utility>
@@ -38,6 +39,8 @@ public:
   virtual v8::Local<v8::Value> construct(Nan::HandleScope &scope,
                                          v8::Isolate *isolate) const = 0;
 };
+
+using EventValue = std::shared_ptr<Constructable> const &;
 
 using ObjectValues = std::vector<std::pair<std::string, Constructable>>;
 

@@ -1,4 +1,5 @@
 #include <iostream>
+#include <memory>
 #include <node.h>
 #include <sstream>
 #include <thread>
@@ -20,14 +21,15 @@ public:
     for (int32_t i = 0; i < n_; ++i) {
       stringstream ss;
       ss << "Test" << i;
-      const auto val = StringConstructable(ss.str());
-      while (!emitter("test", &val)) {
+      std::shared_ptr<Constructable> val =
+          std::make_shared<StringConstructable>(ss.str());
+      while (!emitter("test", val)) {
         std::this_thread::yield();
       }
-      while (!emitter("test2", &val)) {
+      while (!emitter("test2", val)) {
         std::this_thread::yield();
       }
-      while (!emitter("test3", &val)) {
+      while (!emitter("test3", val)) {
         std::this_thread::yield();
       }
     }
@@ -45,7 +47,7 @@ public:
 
   using EventEmitterFunctionReentrant =
       std::function<int(const ExecutionProgressSender *sender,
-                        const std::string event, const Constructable *value)>;
+                        const std::string event, EventValue value)>;
 
   virtual void
   ExecuteWithEmitter(const ExecutionProgressSender *sender,
@@ -53,21 +55,17 @@ public:
     for (int32_t i = 0; i < n_; ++i) {
       stringstream ss;
       ss << "Test" << i;
-      const auto val = StringConstructable(ss.str());
-      cout << "Test" << i << "\n";
-      auto res = emitter(sender, "test", &val);
-      // cout << "res: " << res << "\n";
-      while (!res) {
+      std::shared_ptr<Constructable> val =
+          std::make_shared<StringConstructable>(ss.str());
+      while (!emitter(sender, "test", val)) {
         std::this_thread::yield();
-        res = emitter(sender, "test", &val);
-        // cout << "res: " << res << "\n";
       }
-      /*  while (!emitter(sender, "test2", &val)) {
-         std::this_thread::yield();
-       }
-       while (!emitter(sender, "test3", &val)) {
-         std::this_thread::yield();
-       } */
+      while (!emitter(sender, "test2", val)) {
+        std::this_thread::yield();
+      }
+      while (!emitter(sender, "test3", val)) {
+        std::this_thread::yield();
+      }
     }
   }
 
