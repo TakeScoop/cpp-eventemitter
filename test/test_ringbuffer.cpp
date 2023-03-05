@@ -139,11 +139,11 @@ TEST_CASE("Test that the reader blocks correctly when ringbuffer is empty") {
 }
 
 typedef size_t TestType;
-#define enqueue(VALUE) do { auto _t = new TestType[1]; _t[0] = VALUE; buf.push_blocking(_t); } while(0)
+#define enqueue(VALUE) do { auto _t = new TestType[1]; _t[0] = VALUE; buf.push_blocking(std::move(_t)); } while(0)
 #define dequeue(VALUE) do { auto _t = buf.pop_blocking(); REQUIRE(_t[0] == VALUE); delete[] _t; } while(0)
 
 TEST_CASE("Test that the ringbuffer cycles") {
-    RingBuffer<const TestType*, 4> buf;
+    RingBuffer<TestType*, 4> buf;
 
     for(size_t i = 0; i < 50; ++i) {
         enqueue(i);
@@ -159,7 +159,7 @@ TEST_CASE("Test multi-producer/multi-consumer") {
 
 
 
-    RingBuffer<const TestType*, 128> buf;
+    RingBuffer<TestType*, 128> buf;
     std::atomic<bool> producer_stop{false};
     std::atomic<bool> consumer_stop{false};
     std::array<size_t, 10> producer_bucket_counts{{0}};
@@ -176,7 +176,7 @@ TEST_CASE("Test multi-producer/multi-consumer") {
         consumers.emplace_back([n, &consumer_bucket_counts, &buf, &consumer_stop]() {
             while (!consumer_stop.load()) {
                 while(buf.read_available()) {
-                    const size_t* m;
+                    size_t* m;
                     if(buf.pop(m)) {
                         delete m;
                         ++consumer_bucket_counts[n];

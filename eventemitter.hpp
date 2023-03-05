@@ -29,9 +29,10 @@
 #include <node_object_wrap.h>
 #include <uv.h>
 
-#include "cemitter.h"
+#include "cpp_emitter.h"
 #include "eventemitter_impl.hpp"
-#include "async_event_emitting_c_worker.hpp"
-#include "async_event_emitting_reentrant_c_worker.hpp"
+#include "async_event_emitting_cpp_worker.hpp"
+#include "async_event_emitting_reentrant_cpp_worker.hpp"
+#include "constructable.hpp"
 
 #endif
