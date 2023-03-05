@@ -5,8 +5,7 @@ const bindings = require("bindings")({
     module_root: testRoot,
     bindings: "eventemitter",
 })
-// const iterate = require('leakage').iterate
-// https://github.com/token-cjg/leakage.git
+const iterate = require("@token-cjg/leakage").iterate
 
 describe("Verify EventEmitter", function () {
     describe("Verify EventEmitter Single", function () {
@@ -122,15 +121,16 @@ describe("Verify EventEmitter", function () {
         })
     })
 
-   /*  describe("Verify callback memory is reclaimed, even if callback is not waited on", function () {
+    describe("Verify callback memory is reclaimed, even if callback is not waited on", function () {
         it("Should not increase memory usage over time", function (done) {
+            this.slow(10000)
             this.timeout(15000)
             iterate(() => {
                 let thing = new bindings.EmitterThing()
-                let v = new Buffer(1000)
+                let v = Buffer.alloc(1000)
 
                 thing.on("test", function (ev) {
-                    v.compare(new Buffer(1000))
+                    v.compare(Buffer.alloc(1000))
                 })
             })
             done()
@@ -139,15 +139,16 @@ describe("Verify EventEmitter", function () {
 
     describe("Verify memory allocated in the test-class EmitterThing is reclaimed", function () {
         it("Should not increase memory usage over time", function () {
+            this.slow(10000)
             this.timeout(15000)
             return iterate.async(() => {
                 return new Promise((resolve, reject) => {
                     let thing = new bindings.EmitterThing()
-                    let v = new Buffer(1000)
+                    let v = Buffer.alloc(1000)
                     let n = 1
 
                     thing.on("test", function (ev) {
-                        v.compare(new Buffer(1000))
+                        v.compare(Buffer.alloc(1000))
                     })
                     thing.run(n, function () {
                         resolve()
@@ -155,5 +156,5 @@ describe("Verify EventEmitter", function () {
                 })
             })
         })
-    }) */
+    })
 })
