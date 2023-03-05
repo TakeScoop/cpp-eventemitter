@@ -42,10 +42,11 @@ public:
 
 using EventValue = std::shared_ptr<Constructable> const &;
 
-using ObjectValues = std::vector<std::pair<std::string, Constructable>>;
-
 class StringConstructable : public Constructable {
 public:
+  explicit StringConstructable(std::string &value)
+      : Constructable(), m_value{std::move(value)} {};
+
   explicit StringConstructable(std::string value)
       : Constructable(), m_value{std::move(value)} {};
 
@@ -59,29 +60,70 @@ private:
   std::string m_value;
 };
 
-/* class ObjectConstructable : public Constructable {
+class UndefinedConstructable : public Constructable {
+public:
+  explicit UndefinedConstructable() : Constructable(){};
+
+  virtual v8::Local<v8::Value> construct(Nan::HandleScope &scope,
+                                         v8::Isolate *isolate) const override {
+
+    return Nan::Undefined();
+  };
+};
+
+class NullConstructable : public Constructable {
+public:
+  explicit NullConstructable() : Constructable(){};
+
+  virtual v8::Local<v8::Value> construct(Nan::HandleScope &scope,
+                                         v8::Isolate *isolate) const override {
+
+    return Nan::Null();
+  };
+};
+
+class TypeErrorConstructable : public Constructable {
+public:
+  explicit TypeErrorConstructable(std::string &value)
+      : Constructable(), m_value{std::move(value)} {};
+
+  virtual v8::Local<v8::Value> construct(Nan::HandleScope &scope,
+                                         v8::Isolate *isolate) const override {
+
+    return Nan::TypeError(m_value.c_str());
+  };
+
+private:
+  std::string m_value;
+};
+
+using ObjectValues =
+    std::vector<std::pair<std::string, std::shared_ptr<Constructable>>>;
+
+class ObjectConstructable : public Constructable {
 public:
   explicit ObjectConstructable(ObjectValues values)
-      : Constructable(), m_values{std::move(values)}, {};
+      : Constructable(), m_values{std::move(values)} {};
 
-  virtual v8::Local<v8::Array> construct(Nan::HandleScope &scope,
-                                               v8::Isolate *isolate) const
-override {
+  virtual v8::Local<v8::Value> construct(Nan::HandleScope &scope,
+                                         v8::Isolate *isolate) const override {
 
     v8::Local<v8::Object> result = v8::Object::New(isolate);
 
     for (const auto &[key, value] : m_values) {
-      Nan::Local<v8::String> keyValue =
+      v8::Local<v8::String> keyValue =
           Nan::New<v8::String>(key).ToLocalChecked();
-      result.Set(isolate.GetCurrentContext(), keyValue, value.construct(scope,
-isolate));
+      result
+          ->Set(isolate->GetCurrentContext(), keyValue,
+                value->construct(scope, isolate))
+          .Check();
     }
 
-    return result;
+    return v8::Local<v8::Value>::Cast(result);
   };
 
 private:
   ObjectValues m_values;
-}; */
+};
 
 #endif
