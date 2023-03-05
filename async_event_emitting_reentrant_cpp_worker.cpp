@@ -20,12 +20,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-#pragma once
-#ifndef _NODE_EVENT_ASYNC_EVENT_EMITTING_REENTRANT_C_WORKER
-#define _NODE_EVENT_ASYNC_EVENT_EMITTING_REENTRANT_C_WORKER
+
 #include <functional>
 #include <memory>
 
+#include "async_event_emitting_reentrant_cpp_worker.hpp"
 #include "async_queued_progress_worker.hpp"
 #include "cpp_emitter.h"
 #include "eventemitter_impl.hpp"
@@ -49,7 +48,9 @@ public:
   /// @param[in] emitter - The emitter object to use for notifying JS callbacks
   /// for given events.
   AsyncEventEmittingReentrantCWorker(Nan::Callback *callback,
-                                     std::shared_ptr<EventEmitter> emitter);
+                                     std::shared_ptr<EventEmitter> emitter)
+      : AsyncQueuedProgressWorker<EventEmitter::ProgressReport, SIZE>(callback),
+        emitter_(emitter) {}
 
   /// emit the EventEmitter::ProgressReport as an event via the given emitter,
   /// ignores whether or not the emit is successful
@@ -60,7 +61,14 @@ public:
   /// @param[in] size - size of the array (should always be 1)
   virtual void
   HandleProgressCallback(const EventEmitter::ProgressReport *report,
-                         size_t size) override;
+                         size_t size) override {
+    UNUSED(size);
+    Nan::HandleScope scope;
+    v8::Isolate *isolate = v8::Isolate::GetCurrent();
+
+    auto &[event, value] = *report;
+    emitter_->emit(this->async_resource, scope, isolate, event, value);
+  }
 
   using EventEmitterFunctionReentrant =
       std::function<int(const ExecutionProgressSender *sender,
@@ -74,14 +82,21 @@ public:
                                   EventEmitterFunctionReentrant fn) = 0;
 
 private:
-  virtual void Execute(const ExecutionProgressSender &sender) override;
+  virtual void Execute(const ExecutionProgressSender &sender) override {
+    ExecuteWithEmitter(&sender, this->reentrant_emit);
+  }
 
   static int reentrant_emit(const ExecutionProgressSender *sender,
-                            const std::string event, EventValue value);
+                            const std::string event, EventValue value) {
+    if (sender) {
+      auto reports = new EventEmitter::ProgressReport[1];
+      reports[0] = EventEmitter::ProgressReport{event, value};
+      return sender->Send(reports, 1);
+    }
+    return false;
+  }
 
   std::shared_ptr<EventEmitter> emitter_;
 };
 
 } // namespace NodeEvent
-
-#endif

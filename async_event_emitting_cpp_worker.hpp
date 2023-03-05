@@ -53,9 +53,7 @@ public:
   /// @param[in] emitter - The emitter object to use for notifying JS callbacks
   /// for given events.
   AsyncEventEmittingCWorker(Nan::Callback *callback,
-                            std::shared_ptr<EventEmitter> emitter)
-      : AsyncQueuedProgressWorker<EventEmitter::ProgressReport, SIZE>(callback),
-        emitter_(emitter) {}
+                            std::shared_ptr<EventEmitter> emitter);
 
   /// The work you need to happen in a worker thread
   /// @param[in] fn - Function suitable for passing to single-threaded C code
@@ -71,48 +69,17 @@ public:
   /// @param[in] size - size of the array (should always be 1)
   virtual void
   HandleProgressCallback(const EventEmitter::ProgressReport *report,
-                         size_t size) override {
-    UNUSED(size);
-    Nan::HandleScope scope;
-    v8::Isolate *isolate = v8::Isolate::GetCurrent();
-
-    auto &[event, value] = *report;
-    emitter_->emit(this->async_resource, scope, isolate, event, value);
-  }
+                         size_t size) override;
 
 private:
   virtual void
   Execute(const typename AsyncQueuedProgressWorker<
           EventEmitter::ProgressReport, SIZE>::ExecutionProgressSender &sender)
-      final override {
-    // XXX(jrb): This will not work if the C library is multithreaded, as the
-    // c_emitter_func_ will be uninitialized in any threads other than the one
-    // we're running in right now
-    emitterFunc(
-        [&sender](const std::string event, EventValue value) -> int {
-          // base class uses delete[], so we have to make sure we use new[]
-          auto reports = new EventEmitter::ProgressReport[1];
-          reports[0] = EventEmitter::ProgressReport{event, value};
+      final override;
 
-          return sender.Send(reports, 1);
-        });
-    ExecuteWithEmitter(this->emit);
-  }
+  static EventEmitterFunction emitterFunc(EventEmitterFunction fn);
 
-  static EventEmitterFunction
-  emitterFunc(EventEmitterFunction fn) {
-    // XXX(jrb): This will not work if the C library is multithreaded
-    static thread_local EventEmitterFunction
-        c_emitter_func_ = nullptr;
-    if (fn != nullptr) {
-      c_emitter_func_ = fn;
-    }
-    return c_emitter_func_;
-  }
-
-  static int emit(const std::string event, EventValue value) {
-    return emitterFunc(nullptr)(event, value);
-  }
+  static int emit(const std::string event, EventValue value);
   std::shared_ptr<EventEmitter> emitter_;
 };
 

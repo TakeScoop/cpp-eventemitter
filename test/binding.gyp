@@ -24,7 +24,32 @@
     }, "targets": [
         {
             "target_name": "eventemitter",
-            "sources": ["cpp/eventemitter.cpp"]
+            "sources": [
+                "cpp/eventemitter.cpp",
+            ],
+            'dependencies': [
+                'eventemitterlib',
+            ]
         },
+        {
+            'target_name': 'eventemitterlib',
+            'type': '<(library)',
+            "sources": [
+                "../async_event_emitting_cpp_worker.cpp",
+                "../async_event_emitting_reentrant_cpp_worker.cpp",
+                "../async_queued_progress_worker.cpp",
+                "../constructable.cpp",
+                "../eventemitter_impl.cpp"
+            ],
+            "include_dirs": [
+                "../",
+            ],
+            'direct_dependent_settings': {
+                'include_dirs': [
+                    "../",
+                ]
+            },
+        },
+
     ]
 }

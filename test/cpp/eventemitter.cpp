@@ -4,7 +4,7 @@
 #include <sstream>
 #include <thread>
 
-#include "../../eventemitter.hpp"
+#include "eventemitter.hpp"
 
 using namespace std;
 using namespace NodeEvent;
