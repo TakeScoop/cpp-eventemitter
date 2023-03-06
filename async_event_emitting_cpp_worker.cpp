@@ -90,5 +90,4 @@ int AsyncEventEmittingCWorker<SIZE>::emit(const std::string event,
                                           EventValue value) {
   return emitterFunc(nullptr)(event, value);
 }
-std::shared_ptr<EventEmitter> emitter_;
 }; // namespace NodeEvent

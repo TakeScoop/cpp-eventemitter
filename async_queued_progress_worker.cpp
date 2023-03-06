@@ -40,134 +40,113 @@ namespace NodeEvent {
 /// AsyncQueuedProgressWorker provides a ringbuffer (to avoid reallocations and
 /// poor locality of reference) to help prevent lost progress
 template <class T, size_t SIZE>
-class AsyncQueuedProgressWorker : public Nan::AsyncWorker {
-public:
-  class ExecutionProgressSender {
-  public:
-    /// Send enqueus data to the AsyncQueuedProgressWorker bound to this
-    /// instance.
-    ///
-    /// @param[in] data - data to send, must be array (because it will be free'd
-    /// via delete[])
-    /// @param[in] count - size of array
-    ///
-    /// @returns true if successfully enqueued, false otherwise
-    bool Send(const T *data, size_t count) const {
-      return worker_.SendProgress(data, count);
-    }
+bool AsyncQueuedProgressWorker<T, SIZE>::ExecutionProgressSender::Send(
+    const T *data, size_t count) const {
+  return worker_.SendProgress(data, count);
+}
 
-  private:
-    friend void AsyncQueuedProgressWorker::Execute();
-    explicit ExecutionProgressSender(AsyncQueuedProgressWorker &worker)
-        : worker_(worker) {}
-    ExecutionProgressSender() = delete;
-    AsyncQueuedProgressWorker &worker_;
-  };
+template <class T, size_t SIZE>
+AsyncQueuedProgressWorker<T, SIZE>::ExecutionProgressSender::
+    ExecutionProgressSender(AsyncQueuedProgressWorker &worker)
+    : worker_(worker) {}
 
-  using EventEmitterFunctionReentrant =
-      std::function<int(const ExecutionProgressSender *sender,
-                        const std::string event, const EventValue value)>;
+template <class T, size_t SIZE>
+using EventEmitterFunctionReentrant =
+    std::function<int(const typename AsyncQueuedProgressWorker<
+                          T, SIZE>::ExecutionProgressSender *sender,
+                      const std::string event, const EventValue value)>;
 
-  /// @param[in] callback - the callback to invoke after Execute completes.
-  /// (unless overridden, is called from
-  ///                      HandleOKCallback with no arguments, and called from
-  ///                      HandleErrorCallback with the errors reported (if any)
-  explicit AsyncQueuedProgressWorker(Nan::Callback *callback)
-      : AsyncWorker(callback), buffer_() {
-    async_ = std::unique_ptr<uv_async_t>(new uv_async_t());
-    uv_async_init(uv_default_loop(), async_.get(), asyncNotifyProgressQueue);
-    async_->data = this;
-  }
+template <class T, size_t SIZE>
+AsyncQueuedProgressWorker<T, SIZE>::AsyncQueuedProgressWorker(
+    Nan::Callback *callback)
+    : AsyncWorker(callback), buffer_() {
+  async_ = std::unique_ptr<uv_async_t>(new uv_async_t());
+  uv_async_init(uv_default_loop(), async_.get(), asyncNotifyProgressQueue);
+  async_->data = this;
+}
 
-  /// same as AsyncWorker's, except checks if callback is set first
-  virtual void HandleOKCallback() override {
-    Nan::HandleScope scope;
-    if (callback) {
+template <class T, size_t SIZE>
+void AsyncQueuedProgressWorker<T, SIZE>::HandleOKCallback() {
+  Nan::HandleScope scope;
+  if (callback) {
 #if defined(NODE_8_0_MODULE_VERSION) && (NODE_8_0_MODULE_VERSION > 51)
-      callback->Call(0, NULL, async_resource);
+    callback->Call(0, NULL, async_resource);
 #else
-      callback->Call(0, NULL);
+    callback->Call(0, NULL);
 #endif
-    }
   }
+}
 
-  /// same as AsyncWorker's, except checks if callback is set first
-  virtual void HandleErrorCallback() override {
-    Nan::HandleScope scope;
-    if (callback) {
-      v8::Local<v8::Value> argv[] = {v8::Exception::Error(
-          Nan::New<v8::String>(ErrorMessage()).ToLocalChecked())};
-      callback->Call(1, argv, async_resource);
-    }
+template <class T, size_t SIZE>
+void AsyncQueuedProgressWorker<T, SIZE>::HandleErrorCallback() {
+  Nan::HandleScope scope;
+  if (callback) {
+    v8::Local<v8::Value> argv[] = {v8::Exception::Error(
+        Nan::New<v8::String>(ErrorMessage()).ToLocalChecked())};
+    callback->Call(1, argv, async_resource);
   }
+}
 
-  /// close our async_t handle and free resources (via AsyncClose method)
-  virtual void Destroy() override {
-    // NOTABUG: Nan uses reinterpret_cast to pass uv_async_t around
-    uv_close(reinterpret_cast<uv_handle_t *>(async_.get()), AsyncClose);
+template <class T, size_t SIZE>
+void AsyncQueuedProgressWorker<T, SIZE>::Destroy() {
+  // NOTABUG: Nan uses reinterpret_cast to pass uv_async_t around
+  uv_close(reinterpret_cast<uv_handle_t *>(async_.get()), AsyncClose);
+}
+
+template <class T, size_t SIZE>
+void AsyncQueuedProgressWorker<T, SIZE>::Execute(
+    const ExecutionProgressSender &progress) = 0;
+
+template <class T, size_t SIZE>
+void AsyncQueuedProgressWorker<T, SIZE>::HandleProgressCallback(
+    const T *data, size_t size) = 0;
+
+template <class T, size_t SIZE>
+void AsyncQueuedProgressWorker<T, SIZE>::Execute() {
+  ExecutionProgressSender sender{*this};
+  Execute(sender);
+}
+
+template <class T, size_t SIZE>
+void AsyncQueuedProgressWorker<T, SIZE>::HandleProgressQueue() {
+  std::pair<const T *, size_t> elem;
+  while (this->buffer_.pop(elem)) {
+    HandleProgressCallback(elem.first, elem.second);
+    /* if (elem.second > 0) {
+      delete[] elem.first;
+    } */
   }
+}
 
-  /// Will receive a progress sender, which you can "Send" to.
-  ///
-  /// @param[in] progress - an ExecutionProgressSender bound to this instance
-  virtual void Execute(const ExecutionProgressSender &progress) = 0;
+template <class T, size_t SIZE>
+bool AsyncQueuedProgressWorker<T, SIZE>::SendProgress(const T *data,
+                                                      size_t size) {
+  // TODO: here lies an error
+  // use non_blocking and just drop any excessive items
+  bool r = buffer_.push({data, size});
+  uv_async_send(async_.get());
+  return r;
+}
 
-  /// Should be set to handle progress reports as they become available
-  ///
-  /// @param[in] data - The data (must be an array, is free'd with delete[],
-  /// consistent with the Nan API)
-  /// @param[in] size - size of the array
-  virtual void HandleProgressCallback(const T *data, size_t size) = 0;
+#define COMMA ,
+// cheesy macro trick
 
-  /// Execute implements the Nan::AsyncWorker interface. It should not be
-  /// overridden, override virtual void Execute(const ExecutionProgressSender&
-  /// progress) instead
-  void Execute() final override {
-    ExecutionProgressSender sender{*this};
-    Execute(sender);
-  }
+template <class T, size_t SIZE>
+NAUV_WORK_CB(
+    AsyncQueuedProgressWorker<T COMMA SIZE>::asyncNotifyProgressQueue) {
+  auto worker = static_cast<AsyncQueuedProgressWorker *>(async->data);
+  worker->HandleProgressQueue();
+}
 
-private:
-  void HandleProgressQueue() {
-    std::pair<const T *, size_t> elem;
-    while (this->buffer_.pop(elem)) {
-      HandleProgressCallback(elem.first, elem.second);
-      /* if (elem.second > 0) {
-        delete[] elem.first;
-      } */
-    }
-  }
-
-  bool SendProgress(const T *data, size_t size) {
-    // TODO: here lies an error
-    // use non_blocking and just drop any excessive items
-    bool r = buffer_.push({data, size});
-    uv_async_send(async_.get());
-    return r;
-  }
-
-  // This is invoked as an effect if calling uv_async_send(async_), so executes
-  // on the thread that the default loop is running on, so it can safely touch
-  // v8 data structures
-  static NAUV_WORK_CB(asyncNotifyProgressQueue) {
-    auto worker = static_cast<AsyncQueuedProgressWorker *>(async->data);
+template <class T, size_t SIZE>
+void AsyncQueuedProgressWorker<T, SIZE>::AsyncClose(uv_handle_t *handle) {
+  auto worker = static_cast<AsyncQueuedProgressWorker *>(handle->data);
+  // Destroy happens in the v8 main loop; so we can flush out the Progress
+  // queue here before destroying
+  if (worker->buffer_.read_available()) {
     worker->HandleProgressQueue();
   }
-
-  // This is invoked after Destroy(), which executes on the thread that the
-  // default loop is running on, and so can touch v8 data structures
-  static void AsyncClose(uv_handle_t *handle) {
-    auto worker = static_cast<AsyncQueuedProgressWorker *>(handle->data);
-    // Destroy happens in the v8 main loop; so we can flush out the Progress
-    // queue here before destroying
-    if (worker->buffer_.read_available()) {
-      worker->HandleProgressQueue();
-    }
-    delete worker;
-  }
-
-  RingBuffer<std::pair<const T *, size_t>, SIZE> buffer_;
-  std::unique_ptr<uv_async_t> async_;
-};
+  delete worker;
+}
 
 } // namespace NodeEvent

@@ -54,8 +54,8 @@ public:
     explicit InvalidEvent(const std::string &msg);
   };
 
-  EventEmitter() : receivers_lock_(), receivers_() {}
-  virtual ~EventEmitter() noexcept = default;
+  EventEmitter();
+  virtual ~EventEmitter() noexcept;
 
   /// Set a callback for a given event name
   ///

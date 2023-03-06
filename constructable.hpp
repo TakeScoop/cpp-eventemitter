@@ -77,6 +77,17 @@ public:
                                          v8::Isolate *isolate) const override;
 };
 
+class BooleanConstructable : public Constructable {
+public:
+  explicit BooleanConstructable(bool &value);
+
+  virtual v8::Local<v8::Value> construct(Nan::HandleScope &scope,
+                                         v8::Isolate *isolate) const override;
+
+private:
+  bool m_value;
+};
+
 class NullConstructable : public Constructable {
 public:
   explicit NullConstructable();
