@@ -35,34 +35,30 @@ namespace NodeEvent {
 /// avoid c++14)
 class uv_rwlock {
 public:
-  uv_rwlock() { uv_rwlock_init(&lock_); }
-  ~uv_rwlock() noexcept { uv_rwlock_destroy(&lock_); }
+  uv_rwlock();
+  ~uv_rwlock() noexcept;
 
   uv_rwlock(const uv_rwlock &other) = delete;
   uv_rwlock &operator=(const uv_rwlock &other) = delete;
 
-  uv_rwlock(uv_rwlock &&other) : lock_(std::move(other.lock_)) {}
+  uv_rwlock(uv_rwlock &&other);
 
-  uv_rwlock &operator=(uv_rwlock &&other) {
-    uv_rwlock_destroy(&lock_);
-    lock_ = std::move(other.lock_);
-    return *this;
-  }
+  uv_rwlock &operator=(uv_rwlock &&other);
 
-  void swap(uv_rwlock &other) { std::swap(this->lock_, other.lock_); }
+  void swap(uv_rwlock &other);
 
-  void lock() { uv_rwlock_wrlock(&lock_); }
-  void unlock() { uv_rwlock_wrunlock(&lock_); }
-  bool try_lock() { return uv_rwlock_trywrlock(&lock_); }
-  void lock_shared() { uv_rwlock_rdlock(&lock_); }
-  void unlock_shared() { uv_rwlock_rdunlock(&lock_); }
-  bool try_lock_shared() { return uv_rwlock_tryrdlock(&lock_); }
+  void lock();
+  void unlock();
+  bool try_lock();
+  void lock_shared();
+  void unlock_shared();
+  bool try_lock_shared();
 
 private:
   uv_rwlock_t lock_;
 };
 
-void swap(uv_rwlock &lhs, uv_rwlock &rhs) { lhs.swap(rhs); }
+void swap(uv_rwlock &lhs, uv_rwlock &rhs);
 
 } // namespace NodeEvent
 

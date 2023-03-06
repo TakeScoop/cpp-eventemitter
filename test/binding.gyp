@@ -39,7 +39,10 @@
                 "../async_event_emitting_reentrant_cpp_worker.cpp",
                 "../async_queued_progress_worker.cpp",
                 "../constructable.cpp",
-                "../eventemitter_impl.cpp"
+                "../eventemitter_impl.cpp",
+                "../shared_lock.cpp",
+                "../shared_ringbuffer.cpp",
+                "../uv_rwlock_adaptor.cpp",
             ],
             "include_dirs": [
                 "../",
